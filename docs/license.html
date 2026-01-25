@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ライセンス情報 - 傘判断アプリ</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', 'Noto Sans CJK JP', sans-serif;
+      line-height: 1.8;
+      color: #333;
+      background: #f5f5f5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 1.8em; }
+    .header a { color: white; text-decoration: none; display: inline-block; margin-top: 15px; opacity: 0.9; }
+    .header a:hover { opacity: 1; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    h2 {
+      color: #4A90D9;
+      font-size: 1.2em;
+      margin: 0 0 20px;
+    }
+    .license-item {
+      padding: 15px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .license-item:last-child { border-bottom: none; }
+    .license-item h3 {
+      color: #333;
+      font-size: 1em;
+      margin-bottom: 5px;
+    }
+    .license-item p {
+      color: #666;
+      font-size: 0.9em;
+      margin: 0;
+    }
+    .license-item a {
+      color: #4A90D9;
+      text-decoration: none;
+    }
+    .license-item a:hover { text-decoration: underline; }
+    pre {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      font-size: 0.85em;
+      overflow-x: auto;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>ライセンス情報</h1>
+    <a href="index.html">&larr; サポートページに戻る</a>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>本アプリのライセンス</h2>
+      <p style="color: #555; margin-bottom: 20px;">本アプリはMITライセンスの下で公開されています。</p>
+      <pre>MIT License
+
+Copyright (c) 2024 傘判断アプリ
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+    </div>
+
+    <div class="card">
+      <h2>使用しているオープンソースライブラリ</h2>
+      <p style="color: #666; margin-bottom: 20px;">本アプリは以下のオープンソースソフトウェアを使用しています。</p>
+
+      <div class="license-item">
+        <h3>React Native</h3>
+        <p>MIT License - <a href="https://github.com/facebook/react-native" target="_blank">github.com/facebook/react-native</a></p>
+      </div>
+
+      <div class="license-item">
+        <h3>Expo</h3>
+        <p>MIT License - <a href="https://github.com/expo/expo" target="_blank">github.com/expo/expo</a></p>
+      </div>
+
+      <div class="license-item">
+        <h3>React Navigation</h3>
+        <p>MIT License - <a href="https://github.com/react-navigation/react-navigation" target="_blank">github.com/react-navigation/react-navigation</a></p>
+      </div>
+
+      <div class="license-item">
+        <h3>expo-location</h3>
+        <p>MIT License - <a href="https://docs.expo.dev/versions/latest/sdk/location/" target="_blank">docs.expo.dev/versions/latest/sdk/location</a></p>
+      </div>
+
+      <div class="license-item">
+        <h3>expo-notifications</h3>
+        <p>MIT License - <a href="https://docs.expo.dev/versions/latest/sdk/notifications/" target="_blank">docs.expo.dev/versions/latest/sdk/notifications</a></p>
+      </div>
+
+      <div class="license-item">
+        <h3>@react-native-async-storage/async-storage</h3>
+        <p>MIT License - <a href="https://github.com/react-native-async-storage/async-storage" target="_blank">github.com/react-native-async-storage/async-storage</a></p>
+      </div>
+
+      <div class="license-item">
+        <h3>TypeScript</h3>
+        <p>Apache License 2.0 - <a href="https://github.com/microsoft/TypeScript" target="_blank">github.com/microsoft/TypeScript</a></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>天気データの出典</h2>
+      <div class="license-item">
+        <h3>気象庁 天気予報API</h3>
+        <p>本アプリは気象庁が提供する天気予報データを使用しています。</p>
+        <p><a href="https://www.jma.go.jp/jma/kishou/info/coment.html" target="_blank">気象庁ホームページ利用規約</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

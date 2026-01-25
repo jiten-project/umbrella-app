@@ -8,34 +8,82 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+.expo-shared/
 
-# Native
+# Native - generated folders
+/ios/
+/android/
 .kotlin/
+
+# Native - signing keys and certificates
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.pem
+*.cer
+*.certSigningRequest
 
 # Metro
 .metro-health-check*
 
-# debug
+# Debug logs
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
+logs/
 
 # macOS
 .DS_Store
-*.pem
+.AppleDouble
+.LSOverride
+._*
 
-# local env files
-.env*.local
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# typescript
+# Linux
+*~
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# TypeScript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# Environment files
+.env
+.env.*
+.env*.local
+!.env.example
+
+# Testing
+coverage/
+.nyc_output/
+jest-results/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Build
+build/
+out/
+
+# Serena (AI assistant tool)
+.serena/
+
+# EAS Build
+.easignore

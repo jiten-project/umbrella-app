@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プライバシーポリシー - 傘判断アプリ</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', 'Noto Sans CJK JP', sans-serif;
+      line-height: 1.8;
+      color: #333;
+      background: #f5f5f5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 1.8em; }
+    .header a { color: white; text-decoration: none; display: inline-block; margin-top: 15px; opacity: 0.9; }
+    .header a:hover { opacity: 1; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    h2 {
+      color: #4A90D9;
+      font-size: 1.2em;
+      margin: 25px 0 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e8f4fd;
+    }
+    h2:first-child { margin-top: 0; }
+    p { margin-bottom: 15px; color: #555; }
+    ul {
+      margin-bottom: 15px;
+      padding-left: 25px;
+      color: #555;
+    }
+    li { margin-bottom: 8px; }
+    .highlight {
+      background: #e8f4fd;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .highlight p { margin: 0; }
+    .update-date {
+      text-align: right;
+      color: #999;
+      font-size: 0.9em;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>プライバシーポリシー</h1>
+    <a href="index.html">&larr; サポートページに戻る</a>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="highlight">
+        <p><strong>要約:</strong> 本アプリはユーザーの個人情報を収集・送信しません。すべてのデータは端末内でのみ処理されます。</p>
+      </div>
+
+      <h2>1. 収集する情報</h2>
+      <p>本アプリは以下の情報を端末内で使用します：</p>
+      <ul>
+        <li><strong>位置情報:</strong> GPS機能を使用して現在地を取得し、適切な地域の天気予報を表示するために使用します。</li>
+        <li><strong>設定情報:</strong> 通知設定、登録地点、外出時間などのユーザー設定を端末内に保存します。</li>
+        <li><strong>キャッシュデータ:</strong> 天気予報データを一時的に端末内にキャッシュし、オフライン時や高速な表示のために使用します。</li>
+      </ul>
+
+      <h2>2. データの送信</h2>
+      <p>本アプリは以下の通信を行います：</p>
+      <ul>
+        <li><strong>気象庁API:</strong> 天気予報データを取得するため、気象庁のサーバーと通信します。この通信にはユーザーの個人情報は含まれません（都道府県コードのみ）。</li>
+        <li><strong>位置情報の逆ジオコーディング:</strong> GPS座標から住所を特定するため、端末のジオコーディングサービスを使用します。</li>
+      </ul>
+      <p><strong>重要:</strong> ユーザーの位置情報、設定情報、その他の個人情報を当社のサーバーや第三者に送信することはありません。</p>
+
+      <h2>3. データの保存</h2>
+      <p>すべてのデータは端末内のローカルストレージにのみ保存されます。</p>
+      <ul>
+        <li>設定情報: AsyncStorage（端末内ストレージ）</li>
+        <li>天気キャッシュ: AsyncStorage（15分間の有効期限）</li>
+      </ul>
+      <p>アプリを削除すると、すべてのデータが端末から削除されます。</p>
+
+      <h2>4. 第三者への提供</h2>
+      <p>本アプリはユーザーの情報を第三者に提供、販売、共有することはありません。</p>
+
+      <h2>5. 広告・トラッキング</h2>
+      <p>本アプリは広告を表示しません。また、アクセス解析やトラッキングツールを使用していません。</p>
+
+      <h2>6. 子どものプライバシー</h2>
+      <p>本アプリは特定の年齢層を対象としておらず、意図的に子どもから個人情報を収集することはありません。</p>
+
+      <h2>7. セキュリティ</h2>
+      <p>本アプリはすべてのデータを端末内でのみ処理するため、データ漏洩のリスクを最小限に抑えています。外部サーバーとの通信はHTTPS暗号化を使用しています。</p>
+
+      <h2>8. ユーザーの権利</h2>
+      <p>ユーザーは以下の権利を有します：</p>
+      <ul>
+        <li>位置情報の使用許可をいつでも取り消すことができます（端末の設定から）</li>
+        <li>アプリを削除することで、すべてのローカルデータを削除できます</li>
+        <li>アプリ内の設定画面から、登録した地点情報を削除できます</li>
+      </ul>
+
+      <h2>9. ポリシーの変更</h2>
+      <p>本プライバシーポリシーは、必要に応じて変更されることがあります。重要な変更がある場合は、アプリ内またはこのページでお知らせします。</p>
+
+      <h2>10. お問い合わせ</h2>
+      <p>プライバシーに関するご質問やご懸念がある場合は、GitHubのIssuesページからお問い合わせください。</p>
+
+      <p class="update-date">最終更新日: 2024年1月</p>
+    </div>
+  </div>
+</body>
+</html>

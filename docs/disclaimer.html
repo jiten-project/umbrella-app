@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>免責事項 - 傘判断アプリ</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', 'Noto Sans CJK JP', sans-serif;
+      line-height: 1.8;
+      color: #333;
+      background: #f5f5f5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 1.8em; }
+    .header a { color: white; text-decoration: none; display: inline-block; margin-top: 15px; opacity: 0.9; }
+    .header a:hover { opacity: 1; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    h2 {
+      color: #4A90D9;
+      font-size: 1.2em;
+      margin: 25px 0 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e8f4fd;
+    }
+    h2:first-child { margin-top: 0; }
+    p { margin-bottom: 15px; color: #555; }
+    .warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .update-date {
+      text-align: right;
+      color: #999;
+      font-size: 0.9em;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>免責事項</h1>
+    <a href="index.html">&larr; サポートページに戻る</a>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="warning">
+        <strong>重要:</strong> 本アプリの情報を参考にする際は、必ず実際の天気予報や空模様もご確認ください。
+      </div>
+
+      <h2>1. 天気予報データについて</h2>
+      <p>本アプリで使用している天気予報データは、気象庁が提供する公開データを利用しています。データの正確性については気象庁の責任範囲となり、本アプリの運営者は保証いたしません。</p>
+      <p>気象庁のデータ更新タイミングにより、最新の予報と異なる場合があります。</p>
+
+      <h2>2. 傘判断ロジックについて</h2>
+      <p>本アプリの傘判断は以下の基準に基づいています：</p>
+      <p>・降水量1mm以上 → 傘が必要<br>
+      ・降水確率50%以上 → 傘が必要<br>
+      ・降水確率30%以上 → 念のため傘を推奨<br>
+      ・それ以外 → 傘は不要</p>
+      <p>この判断はあくまで参考情報であり、実際の天候状況を保証するものではありません。</p>
+
+      <h2>3. 位置情報について</h2>
+      <p>GPS機能を使用した位置情報は、端末の精度や電波状況により誤差が生じる場合があります。正確な地点の天気予報が必要な場合は、設定画面から手動で地域を選択してください。</p>
+
+      <h2>4. 通知機能について</h2>
+      <p>プッシュ通知は、端末の設定やバッテリー状態により、指定時刻に届かない場合があります。重要な予定がある場合は、アプリを直接開いて確認することをお勧めします。</p>
+
+      <h2>5. サービスの継続性</h2>
+      <p>本アプリは予告なくサービスを変更、停止、または終了する場合があります。また、気象庁のAPIの仕様変更により、一時的にサービスが利用できなくなる可能性があります。</p>
+
+      <h2>6. 損害の免責</h2>
+      <p>本アプリの利用により生じた直接的、間接的な損害について、運営者は一切の責任を負いません。これには以下が含まれますが、これらに限定されません：</p>
+      <p>・傘を持参しなかったことによる濡れ被害<br>
+      ・傘を持参したが雨が降らなかった場合の不便<br>
+      ・通知の遅延や未達による影響<br>
+      ・その他、本アプリの使用に関連するあらゆる損害</p>
+
+      <h2>7. データの保存について</h2>
+      <p>本アプリはすべてのデータを端末内にのみ保存します。アプリの削除やデータクリアにより、設定情報が失われることがあります。</p>
+
+      <p class="update-date">最終更新日: 2024年1月</p>
+    </div>
+  </div>
+</body>
+</html>
