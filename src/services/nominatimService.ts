@@ -200,7 +200,7 @@ export const searchAddress = async (
     }
 
     // 結果を変換
-    const results: LocationSearchResult[] = data.map(item => {
+    const rawResults: LocationSearchResult[] = data.map(item => {
       const prefecture = extractPrefecture(item.address, item.display_name);
       const areaCode = prefecture ? getAreaCodeFromPrefecture(prefecture) : null;
 
@@ -214,6 +214,17 @@ export const searchAddress = async (
         prefecture,
         areaCode,
       };
+    });
+
+    // 重複を除去（mainText + secondaryText の組み合わせで判定）
+    const seen = new Set<string>();
+    const results = rawResults.filter(item => {
+      const key = `${item.mainText}|${item.secondaryText}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
     });
 
     // 都道府県が特定できた結果を優先してソート
