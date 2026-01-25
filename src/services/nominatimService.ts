@@ -216,10 +216,13 @@ export const searchAddress = async (
       };
     });
 
-    // 重複を除去（mainText + secondaryText の組み合わせで判定）
+    // 重複を除去（mainText + secondaryText + 座標で判定）
+    // 座標は小数点以下3桁（約100m精度）で丸めて比較
     const seen = new Set<string>();
     const results = rawResults.filter(item => {
-      const key = `${item.mainText}|${item.secondaryText}`;
+      const latRounded = item.latitude.toFixed(3);
+      const lonRounded = item.longitude.toFixed(3);
+      const key = `${item.mainText}|${item.secondaryText}|${latRounded},${lonRounded}`;
       if (seen.has(key)) {
         return false;
       }
