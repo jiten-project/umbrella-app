@@ -34,10 +34,10 @@ export const DisclaimerScreen: React.FC = () => {
             本アプリの傘判断は、設定画面でユーザーが設定した基準に基づいて自動的に行われます。
           </Text>
           <Text style={styles.listItem}>
-            • 降水確率の閾値（30%〜70%から選択可能、初期値50%）
+            • 降水確率の閾値（0%〜100%から選択可能、初期値50%）
           </Text>
           <Text style={styles.listItem}>
-            • 降水量の閾値（0.5mm〜5mmから選択可能、初期値1mm）
+            • 降水量の閾値（0mm〜20mmから選択可能、初期値1mm）
           </Text>
           <Text style={styles.listItem}>
             • 条件の組み合わせ（「または」「かつ」から選択可能）

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "umbrella-app",
+    "name": "傘持ってく？",
     "slug": "umbrella-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,21 +10,65 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#4A90D9"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.umbrella-app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "現在地の天気予報を取得するために位置情報を使用します",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "バックグラウンドでも天気情報を更新するために位置情報を使用します",
+        "UIBackgroundModes": ["fetch", "remote-notification"],
+        "CFBundleDisplayName": "傘持ってく？",
+        "CFBundleLocalizations": ["ja"],
+        "CFBundleDevelopmentRegion": "ja"
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.yourcompany.umbrellaapp",
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#4A90D9"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "バックグラウンドでも天気情報を更新するために位置情報を使用します",
+          "locationWhenInUsePermission": "現在地の天気予報を取得するために位置情報を使用します"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#4A90D9"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    },
+    "owner": "your-expo-username"
   }
 }

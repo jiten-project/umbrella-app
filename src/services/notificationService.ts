@@ -54,7 +54,7 @@ export const scheduleDailyNotification = async (
     const id = await Notifications.scheduleNotificationAsync({
       content: {
         title: '傘チェック',
-        body: 'タップして今日の傘判断を確認しましょう',
+        body: 'タップして今日の傘チェックを確認しましょう',
         data: { type: 'daily_check' },
       },
       trigger: {
@@ -81,7 +81,7 @@ export const sendUmbrellaNotification = async (
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: `${icon} 今日の傘判断`,
+      title: `${icon} 傘持ってく？`,
       body,
       data: { type: 'umbrella_result', result },
     },

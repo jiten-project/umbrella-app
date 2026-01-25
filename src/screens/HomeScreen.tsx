@@ -298,7 +298,7 @@ export const HomeScreen: React.FC = () => {
       >
         {/* ヘッダー */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>傘判断</Text>
+          <Text style={styles.headerTitle}>傘持ってく？</Text>
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={() => navigation.navigate('Settings')}

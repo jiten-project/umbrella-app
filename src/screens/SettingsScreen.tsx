@@ -35,10 +35,10 @@ import { Settings, Location, UmbrellaCriteriaLogic } from '../types';
 type LocationPickerMode = 'add' | 'origin' | 'destination';
 
 // 閾値の選択肢
-const POP_OPTIONS = [30, 40, 50, 60, 70];
-const PRECIP_OPTIONS = [0.5, 1, 2, 3, 5];
+const POP_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+const PRECIP_OPTIONS = [0, 0.5, 1, 2, 3, 5, 10, 20];
 
-const SUPPORT_URL = 'https://your-username.github.io/umbrella-app/';
+const SUPPORT_URL = 'https://your-username.github.io/kasa-motteku/';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -494,7 +494,7 @@ export const SettingsScreen: React.FC = () => {
 
         {/* バージョン情報 */}
         <View style={styles.section}>
-          <Text style={styles.versionText}>傘判断アプリ v1.1.0</Text>
+          <Text style={styles.versionText}>傘持ってく？ v1.0.0</Text>
         </View>
       </ScrollView>
 

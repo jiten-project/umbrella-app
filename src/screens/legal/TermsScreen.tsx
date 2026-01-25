@@ -17,7 +17,7 @@ export const TermsScreen: React.FC = () => {
 
           <Text style={styles.sectionTitle}>第1条（適用）</Text>
           <Text style={styles.paragraph}>
-            本利用規約（以下「本規約」）は、傘判断アプリ（以下「本アプリ」）の利用条件を定めるものです。ユーザーの皆様には、本規約に同意の上、本アプリをご利用いただきます。
+            本利用規約（以下「本規約」）は、傘持ってく？（以下「本アプリ」）の利用条件を定めるものです。ユーザーの皆様には、本規約に同意の上、本アプリをご利用いただきます。
           </Text>
 
           <Text style={styles.sectionTitle}>第2条（サービス内容）</Text>
