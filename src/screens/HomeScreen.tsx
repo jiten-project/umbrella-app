@@ -18,7 +18,13 @@ import {
   determineCombinedUmbrella,
 } from '../services/weatherApi';
 import { getCurrentLocation } from '../services/locationService';
-import { loadSettings, saveSettings } from '../services/storageService';
+import {
+  loadSettings,
+  saveSettings,
+  getTodaySchedule,
+  DAY_NAMES,
+} from '../services/storageService';
+import { DayOfWeek } from '../types';
 import {
   CombinedUmbrellaResult,
   Settings,
@@ -101,25 +107,43 @@ export const HomeScreen: React.FC = () => {
       // 設定を読み込み
       const loadedSettings = await loadSettings();
       setSettings(loadedSettings);
+
+      // 今日の曜日設定を取得
+      const todaySchedule = getTodaySchedule(loadedSettings);
+
+      // 外出予定がない場合
+      if (!todaySchedule) {
+        const dayOfWeek = new Date().getDay() as DayOfWeek;
+        setOutingTime({ start: '', end: '' });
+        setCombinedResult({
+          overallDecision: 'not_required',
+          overallMessage: `${DAY_NAMES[dayOfWeek]}曜日は外出予定がありません`,
+          origin: undefined,
+          destination: undefined,
+        });
+        return;
+      }
+
+      // 曜日設定から外出時間を設定
       setOutingTime({
-        start: loadedSettings.defaultOutingStart,
-        end: loadedSettings.defaultOutingEnd,
+        start: todaySchedule.outingStart,
+        end: todaySchedule.outingEnd,
       });
 
       let originResult: LocationUmbrellaResult | undefined;
       let destinationResult: LocationUmbrellaResult | undefined;
 
-      // 外出時間の設定
+      // 外出時間の設定（曜日設定から取得）
       const outingTimeSettings = {
-        start: loadedSettings.defaultOutingStart,
-        end: loadedSettings.defaultOutingEnd,
+        start: todaySchedule.outingStart,
+        end: todaySchedule.outingEnd,
       };
 
-      // 出発地の天気を取得
-      if (loadedSettings.originLocationId) {
+      // 出発地の天気を取得（曜日設定の出発地を使用）
+      if (todaySchedule.originLocationId) {
         // 登録済み地点を使用
         const originLocation = loadedSettings.locations.find(
-          (loc) => loc.id === loadedSettings.originLocationId
+          (loc) => loc.id === todaySchedule.originLocationId
         );
         if (originLocation) {
           const forecast = await fetchWeatherForecast(originLocation.areaCode);
@@ -172,10 +196,10 @@ export const HomeScreen: React.FC = () => {
         };
       }
 
-      // 目的地の天気を取得
-      if (loadedSettings.destinationLocationId) {
+      // 目的地の天気を取得（曜日設定の目的地を使用）
+      if (todaySchedule.destinationLocationId) {
         const destLocation = loadedSettings.locations.find(
-          (loc) => loc.id === loadedSettings.destinationLocationId
+          (loc) => loc.id === todaySchedule.destinationLocationId
         );
         if (destLocation) {
           const forecast = await fetchWeatherForecast(destLocation.areaCode);
@@ -239,10 +263,24 @@ export const HomeScreen: React.FC = () => {
       setShowEndPicker(false);
     }
 
-    // 再計算
-    if (settings) {
+    // 今日の曜日設定を更新
+    if (settings && settings.weeklySchedule) {
+      const dayOfWeek = new Date().getDay() as DayOfWeek;
+      const todaySchedule = settings.weeklySchedule[dayOfWeek];
+
+      const newWeeklySchedule = {
+        ...settings.weeklySchedule,
+        [dayOfWeek]: {
+          ...todaySchedule,
+          outingStart: type === 'start' ? timeStr : todaySchedule.outingStart,
+          outingEnd: type === 'end' ? timeStr : todaySchedule.outingEnd,
+        },
+      };
+
       const newSettings = {
         ...settings,
+        weeklySchedule: newWeeklySchedule,
+        // 後方互換性のためグローバル設定も更新
         defaultOutingStart:
           type === 'start' ? timeStr : settings.defaultOutingStart,
         defaultOutingEnd: type === 'end' ? timeStr : settings.defaultOutingEnd,
@@ -253,8 +291,13 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
+  // 外出予定がない日かどうか
+  const isNoOutingDay =
+    combinedResult?.overallMessage?.includes('外出予定がありません') ?? false;
+
   const getBackgroundColor = () => {
     if (!combinedResult) return '#f5f5f5';
+    if (isNoOutingDay) return '#9E9E9E'; // グレー
     switch (combinedResult.overallDecision) {
       case 'required':
         return '#4A90D9';
@@ -267,6 +310,7 @@ export const HomeScreen: React.FC = () => {
 
   const getIcon = () => {
     if (!combinedResult) return '🌡️';
+    if (isNoOutingDay) return '🏠'; // 家のアイコン
     switch (combinedResult.overallDecision) {
       case 'required':
         return '☂️';
@@ -432,25 +476,39 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* 外出時間設定 */}
-        <View style={styles.outingTimeContainer}>
-          <Text style={styles.outingTimeLabel}>外出予定時間</Text>
-          <View style={styles.outingTimeButtons}>
-            <TouchableOpacity
-              style={styles.timeButton}
-              onPress={() => setShowStartPicker(true)}
-            >
-              <Text style={styles.timeButtonText}>{outingTime.start}</Text>
-            </TouchableOpacity>
-            <Text style={styles.timeSeparator}>〜</Text>
-            <TouchableOpacity
-              style={styles.timeButton}
-              onPress={() => setShowEndPicker(true)}
-            >
-              <Text style={styles.timeButtonText}>{outingTime.end}</Text>
-            </TouchableOpacity>
+        {/* 外出時間設定（外出予定がある日のみ表示） */}
+        {!isNoOutingDay && (
+          <View style={styles.outingTimeContainer}>
+            <Text style={styles.outingTimeLabel}>外出予定時間</Text>
+            <View style={styles.outingTimeButtons}>
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={() => setShowStartPicker(true)}
+              >
+                <Text style={styles.timeButtonText}>{outingTime.start}</Text>
+              </TouchableOpacity>
+              <Text style={styles.timeSeparator}>〜</Text>
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={() => setShowEndPicker(true)}
+              >
+                <Text style={styles.timeButtonText}>{outingTime.end}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
+
+        {/* 外出予定なしの場合の設定誘導 */}
+        {isNoOutingDay && (
+          <TouchableOpacity
+            style={styles.noOutingSettingsButton}
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <Text style={styles.noOutingSettingsText}>
+              曜日別の設定を変更する
+            </Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       {/* 時間選択モーダル */}
@@ -719,5 +777,23 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#666',
     marginHorizontal: 15,
+  },
+  noOutingSettingsButton: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginTop: 15,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  noOutingSettingsText: {
+    fontSize: 16,
+    color: '#4A90D9',
+    fontWeight: '500',
   },
 });

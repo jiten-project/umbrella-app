@@ -1,5 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Settings, JmaForecastResponse, isJmaForecastResponse, UmbrellaCriteria } from '../types';
+import {
+  Settings,
+  JmaForecastResponse,
+  isJmaForecastResponse,
+  UmbrellaCriteria,
+  DayOfWeek,
+  DaySchedule,
+  WeeklySchedule,
+} from '../types';
 
 const STORAGE_KEYS = {
   SETTINGS: '@umbrella_settings',
@@ -13,6 +21,29 @@ export const DEFAULT_UMBRELLA_CRITERIA: UmbrellaCriteria = {
   logic: 'or', // どちらかの条件を満たせば傘必要
 };
 
+// 曜日名（日本語表示用）
+export const DAY_NAMES: readonly string[] = ['日', '月', '火', '水', '木', '金', '土'];
+
+// 単一曜日のデフォルト設定を生成
+const createDefaultDaySchedule = (enabled: boolean): DaySchedule => ({
+  enabled,
+  originLocationId: null, // GPS
+  destinationLocationId: null,
+  outingStart: '09:00',
+  outingEnd: '18:00',
+});
+
+// 週間デフォルト設定（土日は外出なし）
+export const DEFAULT_WEEKLY_SCHEDULE: WeeklySchedule = {
+  0: createDefaultDaySchedule(false), // 日曜
+  1: createDefaultDaySchedule(true), // 月曜
+  2: createDefaultDaySchedule(true), // 火曜
+  3: createDefaultDaySchedule(true), // 水曜
+  4: createDefaultDaySchedule(true), // 木曜
+  5: createDefaultDaySchedule(true), // 金曜
+  6: createDefaultDaySchedule(false), // 土曜
+};
+
 // デフォルト設定
 export const DEFAULT_SETTINGS: Settings = {
   notificationEnabled: false,
@@ -24,6 +55,7 @@ export const DEFAULT_SETTINGS: Settings = {
   originLocationId: null, // 出発地（null = GPS）
   destinationLocationId: null, // 目的地（null = 設定なし）
   umbrellaCriteria: DEFAULT_UMBRELLA_CRITERIA,
+  weeklySchedule: DEFAULT_WEEKLY_SCHEDULE,
 };
 
 // 設定を保存
@@ -36,12 +68,47 @@ export const saveSettings = async (settings: Settings): Promise<void> => {
   }
 };
 
+// 旧設定から曜日設定へのマイグレーション
+const migrateToWeeklySchedule = (oldSettings: Partial<Settings>): WeeklySchedule => {
+  const baseSchedule: DaySchedule = {
+    enabled: true,
+    originLocationId: oldSettings.originLocationId ?? null,
+    destinationLocationId: oldSettings.destinationLocationId ?? null,
+    outingStart: oldSettings.defaultOutingStart ?? '09:00',
+    outingEnd: oldSettings.defaultOutingEnd ?? '18:00',
+  };
+
+  return {
+    0: { ...baseSchedule, enabled: false }, // 日曜は外出なし
+    1: { ...baseSchedule },
+    2: { ...baseSchedule },
+    3: { ...baseSchedule },
+    4: { ...baseSchedule },
+    5: { ...baseSchedule },
+    6: { ...baseSchedule, enabled: false }, // 土曜は外出なし
+  };
+};
+
 // 設定を読み込み
 export const loadSettings = async (): Promise<Settings> => {
   try {
     const json = await AsyncStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (json) {
       const saved = JSON.parse(json);
+
+      // weeklyScheduleのマイグレーション
+      let weeklySchedule: WeeklySchedule;
+      if (saved.weeklySchedule) {
+        // 既存の曜日設定がある場合はマージ
+        weeklySchedule = {
+          ...DEFAULT_WEEKLY_SCHEDULE,
+          ...saved.weeklySchedule,
+        };
+      } else {
+        // 古い設定から曜日設定を生成（マイグレーション）
+        weeklySchedule = migrateToWeeklySchedule(saved);
+      }
+
       // umbrellaCriteriaの後方互換性を確保
       return {
         ...DEFAULT_SETTINGS,
@@ -50,6 +117,7 @@ export const loadSettings = async (): Promise<Settings> => {
           ...DEFAULT_UMBRELLA_CRITERIA,
           ...(saved.umbrellaCriteria || {}),
         },
+        weeklySchedule,
       };
     }
     return DEFAULT_SETTINGS;
@@ -57,6 +125,26 @@ export const loadSettings = async (): Promise<Settings> => {
     console.error('設定の読み込みに失敗:', error);
     return DEFAULT_SETTINGS;
   }
+};
+
+// 現在の曜日の設定を取得
+export const getTodaySchedule = (settings: Settings): DaySchedule | null => {
+  const dayOfWeek = new Date().getDay() as DayOfWeek;
+  return getDaySchedule(settings, dayOfWeek);
+};
+
+// 指定曜日の設定を取得
+export const getDaySchedule = (
+  settings: Settings,
+  dayOfWeek: DayOfWeek
+): DaySchedule | null => {
+  const schedule = settings.weeklySchedule?.[dayOfWeek];
+
+  if (!schedule || !schedule.enabled) {
+    return null; // 外出予定なし
+  }
+
+  return schedule;
 };
 
 // 天気キャッシュを保存（15分有効）
