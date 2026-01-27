@@ -24,13 +24,14 @@ expo-env.d.ts
 *.pem
 *.cer
 *.certSigningRequest
-*.orig.*
+*.keystore
 
 # EAS Build
 *.ipa
 *.apk
 *.aab
 .easignore
+.eas/
 
 # Google/Firebase services (sensitive)
 google-services.json
@@ -38,6 +39,9 @@ GoogleService-Info.plist
 
 # Metro
 .metro-health-check*
+
+# Watchman
+.watchmanconfig
 
 # Debug logs
 npm-debug.*
@@ -70,6 +74,7 @@ Desktop.ini
 
 # TypeScript
 *.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # Environment files
 .env
@@ -81,12 +86,14 @@ Desktop.ini
 coverage/
 .nyc_output/
 jest-results/
+__tests__/__snapshots__/
 
 # Temporary files
 tmp/
 temp/
 *.tmp
 *.temp
+.cache/
 
 # Build
 build/
@@ -106,3 +113,23 @@ out/
 
 # NPM
 package-lock.json.bak
+
+# Sentry
+.sentryclirc
+
+# Crash reports
+crash-*.json
+*.crash
+
+# Ruby / CocoaPods (for bare workflow)
+vendor/
+Gemfile.lock
+
+# Flipper (React Native debugger)
+.flipper/
+
+# Turborepo
+.turbo/
+
+# Storybook
+storybook-static/
