@@ -25,12 +25,14 @@ import {
   loadSettings,
   saveSettings,
   DEFAULT_SETTINGS,
+  DAY_NAMES,
+  DEFAULT_WEEKLY_SCHEDULE,
 } from '../services/storageService';
 import {
   requestNotificationPermission,
   syncDailyNotificationWithSettings,
 } from '../services/notificationService';
-import { Settings, Location, UmbrellaCriteriaLogic } from '../types';
+import { Settings, Location, UmbrellaCriteriaLogic, DayOfWeek, DaySchedule } from '../types';
 
 type LocationPickerMode = 'add' | 'origin' | 'destination';
 
@@ -46,6 +48,9 @@ export const SettingsScreen: React.FC = () => {
   const [showNotificationPicker, setShowNotificationPicker] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [locationPickerMode, setLocationPickerMode] = useState<LocationPickerMode>('add');
+  const [selectedDay, setSelectedDay] = useState<DayOfWeek>(() => new Date().getDay() as DayOfWeek);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   useEffect(() => {
     loadSettings().then(setSettings);
@@ -120,20 +125,34 @@ export const SettingsScreen: React.FC = () => {
       setSettings(newSettings);
       await saveSettings(newSettings);
     } else if (locationPickerMode === 'origin') {
-      // 出発地として設定
+      // 出発地として設定（曜日設定に反映）
+      const currentSchedule = settings.weeklySchedule?.[selectedDay] ?? DEFAULT_WEEKLY_SCHEDULE[selectedDay];
+      const newWeeklySchedule = {
+        ...settings.weeklySchedule ?? DEFAULT_WEEKLY_SCHEDULE,
+        [selectedDay]: { ...currentSchedule, originLocationId: newLocation.id },
+      };
+
       const newSettings = {
         ...settings,
         locations: [...settings.locations, newLocation],
-        originLocationId: newLocation.id,
+        weeklySchedule: newWeeklySchedule,
+        originLocationId: newLocation.id, // 後方互換性
       };
       setSettings(newSettings);
       await saveSettings(newSettings);
     } else if (locationPickerMode === 'destination') {
-      // 目的地として設定
+      // 目的地として設定（曜日設定に反映）
+      const currentSchedule = settings.weeklySchedule?.[selectedDay] ?? DEFAULT_WEEKLY_SCHEDULE[selectedDay];
+      const newWeeklySchedule = {
+        ...settings.weeklySchedule ?? DEFAULT_WEEKLY_SCHEDULE,
+        [selectedDay]: { ...currentSchedule, destinationLocationId: newLocation.id },
+      };
+
       const newSettings = {
         ...settings,
         locations: [...settings.locations, newLocation],
-        destinationLocationId: newLocation.id,
+        weeklySchedule: newWeeklySchedule,
+        destinationLocationId: newLocation.id, // 後方互換性
       };
       setSettings(newSettings);
       await saveSettings(newSettings);
@@ -164,9 +183,22 @@ export const SettingsScreen: React.FC = () => {
         text: '削除',
         style: 'destructive',
         onPress: async () => {
+          // 曜日設定からも該当地点を削除
+          const newWeeklySchedule = { ...settings.weeklySchedule ?? DEFAULT_WEEKLY_SCHEDULE };
+          ([0, 1, 2, 3, 4, 5, 6] as DayOfWeek[]).forEach(day => {
+            const schedule = newWeeklySchedule[day];
+            if (schedule.originLocationId === locationId) {
+              newWeeklySchedule[day] = { ...schedule, originLocationId: null };
+            }
+            if (schedule.destinationLocationId === locationId) {
+              newWeeklySchedule[day] = { ...schedule, destinationLocationId: null };
+            }
+          });
+
           const newSettings = {
             ...settings,
             locations: settings.locations.filter((loc) => loc.id !== locationId),
+            weeklySchedule: newWeeklySchedule,
             originLocationId:
               settings.originLocationId === locationId ? null : settings.originLocationId,
             destinationLocationId:
@@ -209,92 +241,263 @@ export const SettingsScreen: React.FC = () => {
     await saveSettings(newSettings);
   };
 
+  // 現在選択中の曜日の設定を取得
+  const getSelectedDaySchedule = (): DaySchedule => {
+    return settings.weeklySchedule?.[selectedDay] ?? DEFAULT_WEEKLY_SCHEDULE[selectedDay];
+  };
+
+  // 曜日設定を更新
+  const updateDaySchedule = async (schedule: DaySchedule) => {
+    const newWeeklySchedule = {
+      ...settings.weeklySchedule ?? DEFAULT_WEEKLY_SCHEDULE,
+      [selectedDay]: schedule,
+    };
+
+    const newSettings = {
+      ...settings,
+      weeklySchedule: newWeeklySchedule,
+    };
+
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+  };
+
+  // 外出予定の有無を切り替え
+  const handleDayEnabledToggle = async (enabled: boolean) => {
+    const schedule = getSelectedDaySchedule();
+    await updateDaySchedule({ ...schedule, enabled });
+  };
+
+  // 曜日設定の出発地を変更
+  const handleDayOriginChange = async (locationId: string | null) => {
+    const schedule = getSelectedDaySchedule();
+    await updateDaySchedule({ ...schedule, originLocationId: locationId });
+  };
+
+  // 曜日設定の目的地を変更
+  const handleDayDestinationChange = async (locationId: string | null) => {
+    const schedule = getSelectedDaySchedule();
+    await updateDaySchedule({ ...schedule, destinationLocationId: locationId });
+  };
+
+  // 曜日設定の外出時間を変更
+  const handleDayTimeChange = async (type: 'start' | 'end', hour: number, minute: number) => {
+    const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    const schedule = getSelectedDaySchedule();
+
+    await updateDaySchedule({
+      ...schedule,
+      outingStart: type === 'start' ? timeStr : schedule.outingStart,
+      outingEnd: type === 'end' ? timeStr : schedule.outingEnd,
+    });
+
+    if (type === 'start') {
+      setShowStartPicker(false);
+    } else {
+      setShowEndPicker(false);
+    }
+  };
+
+  // 平日に同じ設定を適用
+  const applyToWeekdays = async () => {
+    const currentSchedule = getSelectedDaySchedule();
+
+    Alert.alert(
+      '平日に適用',
+      `${DAY_NAMES[selectedDay]}曜日の設定を月〜金に適用しますか？`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '適用',
+          onPress: async () => {
+            const newWeeklySchedule = {
+              ...settings.weeklySchedule ?? DEFAULT_WEEKLY_SCHEDULE,
+            };
+            ([1, 2, 3, 4, 5] as DayOfWeek[]).forEach(day => {
+              newWeeklySchedule[day] = { ...currentSchedule };
+            });
+
+            const newSettings = { ...settings, weeklySchedule: newWeeklySchedule };
+            setSettings(newSettings);
+            await saveSettings(newSettings);
+            Alert.alert('完了', '月〜金に同じ設定を適用しました');
+          },
+        },
+      ]
+    );
+  };
+
+  const daySchedule = getSelectedDaySchedule();
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        {/* 出発地・目的地設定 */}
+        {/* 曜日別設定 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>地点設定</Text>
+          <Text style={styles.sectionTitle}>曜日別設定</Text>
 
-          {/* 出発地 */}
-          <View style={styles.locationSection}>
-            <Text style={styles.locationTitle}>🏠 出発地</Text>
-            <TouchableOpacity
-              style={[
-                styles.locationSelectItem,
-                !settings.originLocationId && styles.locationSelectItemSelected,
-              ]}
-              onPress={() => handleSelectExistingLocation(null, 'origin')}
-            >
-              <Text style={styles.locationSelectIcon}>📍</Text>
-              <Text style={styles.locationSelectText}>GPS（現在地）</Text>
-              {!settings.originLocationId && <Text style={styles.checkmark}>✓</Text>}
-            </TouchableOpacity>
+          {/* 曜日タブ */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.dayTabsContainer}
+          >
+            {([0, 1, 2, 3, 4, 5, 6] as DayOfWeek[]).map((day) => {
+              const schedule = settings.weeklySchedule?.[day] ?? DEFAULT_WEEKLY_SCHEDULE[day];
+              const isSelected = selectedDay === day;
+              const isEnabled = schedule.enabled;
 
-            {settings.locations.map((location) => (
-              <TouchableOpacity
-                key={`origin-${location.id}`}
-                style={[
-                  styles.locationSelectItem,
-                  settings.originLocationId === location.id &&
-                    styles.locationSelectItemSelected,
-                ]}
-                onPress={() => handleSelectExistingLocation(location.id, 'origin')}
-              >
-                <Text style={styles.locationSelectIcon}>🏠</Text>
-                <Text style={styles.locationSelectText}>{location.name}</Text>
-                {settings.originLocationId === location.id && (
-                  <Text style={styles.checkmark}>✓</Text>
-                )}
-              </TouchableOpacity>
-            ))}
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[
+                    styles.dayTab,
+                    isSelected && styles.dayTabSelected,
+                    !isEnabled && styles.dayTabDisabled,
+                  ]}
+                  onPress={() => setSelectedDay(day)}
+                >
+                  <Text
+                    style={[
+                      styles.dayTabText,
+                      isSelected && styles.dayTabTextSelected,
+                      !isEnabled && styles.dayTabTextDisabled,
+                    ]}
+                  >
+                    {DAY_NAMES[day]}
+                  </Text>
+                  {isEnabled && <View style={styles.dayTabDot} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
-            <TouchableOpacity
-              style={styles.addLocationButton}
-              onPress={() => openLocationPicker('origin')}
-            >
-              <Text style={styles.addLocationButtonText}>＋ 新しい地点を追加</Text>
-            </TouchableOpacity>
-          </View>
+          {/* 選択中の曜日の設定パネル */}
+          <View style={styles.daySettingsPanel}>
+            {/* 外出予定の有無 */}
+            <View style={styles.settingRow}>
+              <View>
+                <Text style={styles.settingLabel}>外出予定</Text>
+                <Text style={styles.settingDescription}>
+                  {DAY_NAMES[selectedDay]}曜日に外出するか
+                </Text>
+              </View>
+              <Switch
+                value={daySchedule.enabled}
+                onValueChange={handleDayEnabledToggle}
+                trackColor={{ false: '#ddd', true: '#4A90D9' }}
+              />
+            </View>
 
-          {/* 目的地 */}
-          <View style={styles.locationSection}>
-            <Text style={styles.locationTitle}>🏢 目的地</Text>
-            <TouchableOpacity
-              style={[
-                styles.locationSelectItem,
-                !settings.destinationLocationId && styles.locationSelectItemSelected,
-              ]}
-              onPress={() => handleSelectExistingLocation(null, 'destination')}
-            >
-              <Text style={styles.locationSelectIcon}>❌</Text>
-              <Text style={styles.locationSelectText}>設定しない</Text>
-              {!settings.destinationLocationId && <Text style={styles.checkmark}>✓</Text>}
-            </TouchableOpacity>
+            {daySchedule.enabled && (
+              <>
+                {/* 出発地選択 */}
+                <View style={styles.locationSection}>
+                  <Text style={styles.locationTitle}>🏠 出発地</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.locationSelectItem,
+                      !daySchedule.originLocationId && styles.locationSelectItemSelected,
+                    ]}
+                    onPress={() => handleDayOriginChange(null)}
+                  >
+                    <Text style={styles.locationSelectIcon}>📍</Text>
+                    <Text style={styles.locationSelectText}>GPS（現在地）</Text>
+                    {!daySchedule.originLocationId && <Text style={styles.checkmark}>✓</Text>}
+                  </TouchableOpacity>
 
-            {settings.locations.map((location) => (
-              <TouchableOpacity
-                key={`dest-${location.id}`}
-                style={[
-                  styles.locationSelectItem,
-                  settings.destinationLocationId === location.id &&
-                    styles.locationSelectItemSelected,
-                ]}
-                onPress={() => handleSelectExistingLocation(location.id, 'destination')}
-              >
-                <Text style={styles.locationSelectIcon}>🏢</Text>
-                <Text style={styles.locationSelectText}>{location.name}</Text>
-                {settings.destinationLocationId === location.id && (
-                  <Text style={styles.checkmark}>✓</Text>
-                )}
-              </TouchableOpacity>
-            ))}
+                  {settings.locations.map((location) => (
+                    <TouchableOpacity
+                      key={`origin-${location.id}`}
+                      style={[
+                        styles.locationSelectItem,
+                        daySchedule.originLocationId === location.id &&
+                          styles.locationSelectItemSelected,
+                      ]}
+                      onPress={() => handleDayOriginChange(location.id)}
+                    >
+                      <Text style={styles.locationSelectIcon}>🏠</Text>
+                      <Text style={styles.locationSelectText}>{location.name}</Text>
+                      {daySchedule.originLocationId === location.id && (
+                        <Text style={styles.checkmark}>✓</Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
 
-            <TouchableOpacity
-              style={styles.addLocationButton}
-              onPress={() => openLocationPicker('destination')}
-            >
-              <Text style={styles.addLocationButtonText}>＋ 新しい地点を追加</Text>
+                  <TouchableOpacity
+                    style={styles.addLocationButton}
+                    onPress={() => openLocationPicker('origin')}
+                  >
+                    <Text style={styles.addLocationButtonText}>＋ 新しい地点を追加</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 目的地選択 */}
+                <View style={styles.locationSection}>
+                  <Text style={styles.locationTitle}>🏢 目的地</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.locationSelectItem,
+                      !daySchedule.destinationLocationId && styles.locationSelectItemSelected,
+                    ]}
+                    onPress={() => handleDayDestinationChange(null)}
+                  >
+                    <Text style={styles.locationSelectIcon}>❌</Text>
+                    <Text style={styles.locationSelectText}>設定しない</Text>
+                    {!daySchedule.destinationLocationId && <Text style={styles.checkmark}>✓</Text>}
+                  </TouchableOpacity>
+
+                  {settings.locations.map((location) => (
+                    <TouchableOpacity
+                      key={`dest-${location.id}`}
+                      style={[
+                        styles.locationSelectItem,
+                        daySchedule.destinationLocationId === location.id &&
+                          styles.locationSelectItemSelected,
+                      ]}
+                      onPress={() => handleDayDestinationChange(location.id)}
+                    >
+                      <Text style={styles.locationSelectIcon}>🏢</Text>
+                      <Text style={styles.locationSelectText}>{location.name}</Text>
+                      {daySchedule.destinationLocationId === location.id && (
+                        <Text style={styles.checkmark}>✓</Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+
+                  <TouchableOpacity
+                    style={styles.addLocationButton}
+                    onPress={() => openLocationPicker('destination')}
+                  >
+                    <Text style={styles.addLocationButtonText}>＋ 新しい地点を追加</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 外出時間 */}
+                <View style={styles.outingTimeSection}>
+                  <Text style={styles.locationTitle}>🕐 外出時間</Text>
+                  <View style={styles.outingTimeButtons}>
+                    <TouchableOpacity
+                      style={styles.timeButton}
+                      onPress={() => setShowStartPicker(true)}
+                    >
+                      <Text style={styles.timeButtonText}>{daySchedule.outingStart}</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.timeSeparator}>〜</Text>
+                    <TouchableOpacity
+                      style={styles.timeButton}
+                      onPress={() => setShowEndPicker(true)}
+                    >
+                      <Text style={styles.timeButtonText}>{daySchedule.outingEnd}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </>
+            )}
+
+            {/* 平日に適用ボタン */}
+            <TouchableOpacity style={styles.applyWeekdaysButton} onPress={applyToWeekdays}>
+              <Text style={styles.applyWeekdaysButtonText}>平日（月〜金）に同じ設定を適用</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -494,7 +697,7 @@ export const SettingsScreen: React.FC = () => {
 
         {/* バージョン情報 */}
         <View style={styles.section}>
-          <Text style={styles.versionText}>傘持ってく？ v1.0.0</Text>
+          <Text style={styles.versionText}>傘持ってく？ v1.1.0</Text>
         </View>
       </ScrollView>
 
@@ -520,6 +723,24 @@ export const SettingsScreen: React.FC = () => {
         }
         onSelectLocation={handleSelectLocation}
         onCancel={() => setShowLocationPicker(false)}
+      />
+
+      {/* 曜日設定用時間ピッカー */}
+      <TimePickerModal
+        visible={showStartPicker}
+        title="外出開始時刻"
+        initialHour={parseInt(daySchedule.outingStart.split(':')[0], 10)}
+        initialMinute={parseInt(daySchedule.outingStart.split(':')[1], 10)}
+        onConfirm={(hour, minute) => handleDayTimeChange('start', hour, minute)}
+        onCancel={() => setShowStartPicker(false)}
+      />
+      <TimePickerModal
+        visible={showEndPicker}
+        title="外出終了時刻"
+        initialHour={parseInt(daySchedule.outingEnd.split(':')[0], 10)}
+        initialMinute={parseInt(daySchedule.outingEnd.split(':')[1], 10)}
+        onConfirm={(hour, minute) => handleDayTimeChange('end', hour, minute)}
+        onCancel={() => setShowEndPicker(false)}
       />
     </SafeAreaView>
   );
@@ -716,5 +937,84 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 4,
+  },
+  dayTabsContainer: {
+    marginBottom: 15,
+  },
+  dayTab: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    minWidth: 44,
+  },
+  dayTabSelected: {
+    backgroundColor: '#4A90D9',
+  },
+  dayTabDisabled: {
+    backgroundColor: '#f8f8f8',
+  },
+  dayTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  dayTabTextSelected: {
+    color: '#fff',
+  },
+  dayTabTextDisabled: {
+    color: '#bbb',
+  },
+  dayTabDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#7ED321',
+    marginTop: 4,
+  },
+  daySettingsPanel: {
+    paddingTop: 10,
+  },
+  outingTimeSection: {
+    marginBottom: 20,
+  },
+  outingTimeButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  timeButton: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  timeButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  timeSeparator: {
+    fontSize: 18,
+    color: '#666',
+    marginHorizontal: 15,
+  },
+  applyWeekdaysButton: {
+    backgroundColor: '#f5f5f5',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  applyWeekdaysButtonText: {
+    fontSize: 14,
+    color: '#4A90D9',
+    fontWeight: '500',
   },
 });

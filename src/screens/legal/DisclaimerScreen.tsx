@@ -13,7 +13,7 @@ export const DisclaimerScreen: React.FC = () => {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Text style={styles.title}>免責事項</Text>
-          <Text style={styles.lastUpdated}>最終更新日: 2026年1月25日</Text>
+          <Text style={styles.lastUpdated}>最終更新日: 2026年1月27日</Text>
 
           <Text style={styles.sectionTitle}>1. 天気予報データについて</Text>
           <Text style={styles.paragraph}>
@@ -31,7 +31,7 @@ export const DisclaimerScreen: React.FC = () => {
 
           <Text style={styles.sectionTitle}>2. 傘判断ロジックについて</Text>
           <Text style={styles.paragraph}>
-            本アプリの傘判断は、設定画面でユーザーが設定した基準に基づいて自動的に行われます。
+            本アプリの傘判断は、曜日ごとに設定した出発地・目的地・外出時間と、ユーザーが設定した判断基準に基づいて自動的に行われます。
           </Text>
           <Text style={styles.listItem}>
             • 降水確率の閾値（0%〜100%から選択可能、初期値50%）

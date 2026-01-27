@@ -1,14 +1,14 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# Dependencies
 node_modules/
 
 # Expo
 .expo/
+.expo-shared/
 dist/
 web-build/
 expo-env.d.ts
-.expo-shared/
 
 # Native - generated folders
 /ios/
@@ -16,7 +16,6 @@ expo-env.d.ts
 .kotlin/
 
 # Native - signing keys and certificates
-*.orig.*
 *.jks
 *.p8
 *.p12
@@ -25,9 +24,24 @@ expo-env.d.ts
 *.pem
 *.cer
 *.certSigningRequest
+*.keystore
+
+# EAS Build
+*.ipa
+*.apk
+*.aab
+.easignore
+.eas/
+
+# Google/Firebase services (sensitive)
+google-services.json
+GoogleService-Info.plist
 
 # Metro
 .metro-health-check*
+
+# Watchman
+.watchmanconfig
 
 # Debug logs
 npm-debug.*
@@ -60,6 +74,7 @@ Desktop.ini
 
 # TypeScript
 *.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # Environment files
 .env
@@ -71,12 +86,14 @@ Desktop.ini
 coverage/
 .nyc_output/
 jest-results/
+__tests__/__snapshots__/
 
 # Temporary files
 tmp/
 temp/
 *.tmp
 *.temp
+.cache/
 
 # Build
 build/
@@ -85,5 +102,34 @@ out/
 # Serena (AI assistant tool)
 .serena/
 
-# EAS Build
-.easignore
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
+# NPM
+package-lock.json.bak
+
+# Sentry
+.sentryclirc
+
+# Crash reports
+crash-*.json
+*.crash
+
+# Ruby / CocoaPods (for bare workflow)
+vendor/
+Gemfile.lock
+
+# Flipper (React Native debugger)
+.flipper/
+
+# Turborepo
+.turbo/
+
+# Storybook
+storybook-static/

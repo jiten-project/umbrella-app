@@ -98,17 +98,35 @@ export interface UmbrellaCriteria {
   logic: UmbrellaCriteriaLogic; // AND/OR条件
 }
 
+// 曜日の型（JavaScriptのDate.getDay()と同じ: 0=日曜〜6=土曜）
+export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+// 曜日ごとの設定
+export interface DaySchedule {
+  enabled: boolean; // この曜日に外出予定があるか
+  originLocationId: string | null; // 出発地（null = GPS）
+  destinationLocationId: string | null; // 目的地（null = 設定なし）
+  outingStart: string; // "09:00" 形式
+  outingEnd: string; // "18:00" 形式
+}
+
+// 曜日 → 設定 のマップ
+export type WeeklySchedule = {
+  [key in DayOfWeek]: DaySchedule;
+};
+
 // 設定
 export interface Settings {
   notificationEnabled: boolean;
   notificationTime: string; // "07:00" format
-  defaultOutingStart: string; // "09:00" format
-  defaultOutingEnd: string; // "18:00" format
+  defaultOutingStart: string; // "09:00" format（後方互換性）
+  defaultOutingEnd: string; // "18:00" format（後方互換性）
   locations: Location[];
   selectedLocationId: string | null; // 後方互換性のため残す
-  originLocationId: string | null; // 出発地（null = GPS）
-  destinationLocationId: string | null; // 目的地（null = 設定なし）
+  originLocationId: string | null; // 出発地（後方互換性、null = GPS）
+  destinationLocationId: string | null; // 目的地（後方互換性、null = 設定なし）
   umbrellaCriteria: UmbrellaCriteria; // 傘判断基準
+  weeklySchedule?: WeeklySchedule; // 曜日ごとの設定（オプショナルで後方互換性確保）
 }
 
 // 外出時間
