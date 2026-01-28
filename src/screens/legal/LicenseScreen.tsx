@@ -98,7 +98,7 @@ export const LicenseScreen: React.FC = () => {
 
           <Text style={styles.sectionTitle}>本アプリについて</Text>
           <Text style={styles.paragraph}>
-            傘持ってく？（バージョン 1.0.0）
+            傘持ってく？（バージョン 1.1.0）
           </Text>
           <Text style={styles.paragraph}>
             Copyright (c) 2026 傘持ってく？開発チーム

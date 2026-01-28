@@ -9,6 +9,7 @@ import {
   Switch,
   Alert,
   Linking,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 
@@ -44,6 +45,12 @@ const SUPPORT_URL = 'https://your-username.github.io/kasa-motteku/';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { width } = useWindowDimensions();
+
+  // iPad判定（幅768px以上をiPadとみなす）
+  const isTablet = width >= 768;
+  const scale = isTablet ? 1.5 : 1;
+
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [showNotificationPicker, setShowNotificationPicker] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
@@ -333,8 +340,8 @@ export const SettingsScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         {/* 曜日別設定 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>曜日別設定</Text>
+        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14 * scale }]}>曜日別設定</Text>
 
           {/* 曜日タブ */}
           <ScrollView
@@ -352,6 +359,7 @@ export const SettingsScreen: React.FC = () => {
                   key={day}
                   style={[
                     styles.dayTab,
+                    { paddingVertical: 10 * scale, paddingHorizontal: 16 * scale, minWidth: 44 * scale },
                     isSelected && styles.dayTabSelected,
                     !isEnabled && styles.dayTabDisabled,
                   ]}
@@ -360,13 +368,14 @@ export const SettingsScreen: React.FC = () => {
                   <Text
                     style={[
                       styles.dayTabText,
+                      { fontSize: 14 * scale },
                       isSelected && styles.dayTabTextSelected,
                       !isEnabled && styles.dayTabTextDisabled,
                     ]}
                   >
                     {DAY_NAMES[day]}
                   </Text>
-                  {isEnabled && <View style={styles.dayTabDot} />}
+                  {isEnabled && <View style={[styles.dayTabDot, { width: 6 * scale, height: 6 * scale }]} />}
                 </TouchableOpacity>
               );
             })}
@@ -375,10 +384,10 @@ export const SettingsScreen: React.FC = () => {
           {/* 選択中の曜日の設定パネル */}
           <View style={styles.daySettingsPanel}>
             {/* 外出予定の有無 */}
-            <View style={styles.settingRow}>
+            <View style={[styles.settingRow, { paddingVertical: 12 * scale }]}>
               <View>
-                <Text style={styles.settingLabel}>外出予定</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={[styles.settingLabel, { fontSize: 16 * scale }]}>外出予定</Text>
+                <Text style={[styles.settingDescription, { fontSize: 12 * scale }]}>
                   {DAY_NAMES[selectedDay]}曜日に外出するか
                 </Text>
               </View>
@@ -386,6 +395,7 @@ export const SettingsScreen: React.FC = () => {
                 value={daySchedule.enabled}
                 onValueChange={handleDayEnabledToggle}
                 trackColor={{ false: '#ddd', true: '#4A90D9' }}
+                style={{ transform: [{ scale: scale }] }}
               />
             </View>
 
@@ -393,17 +403,18 @@ export const SettingsScreen: React.FC = () => {
               <>
                 {/* 出発地選択 */}
                 <View style={styles.locationSection}>
-                  <Text style={styles.locationTitle}>🏠 出発地</Text>
+                  <Text style={[styles.locationTitle, { fontSize: 16 * scale }]}>🏠 出発地</Text>
                   <TouchableOpacity
                     style={[
                       styles.locationSelectItem,
+                      { padding: 12 * scale },
                       !daySchedule.originLocationId && styles.locationSelectItemSelected,
                     ]}
                     onPress={() => handleDayOriginChange(null)}
                   >
-                    <Text style={styles.locationSelectIcon}>📍</Text>
-                    <Text style={styles.locationSelectText}>GPS（現在地）</Text>
-                    {!daySchedule.originLocationId && <Text style={styles.checkmark}>✓</Text>}
+                    <Text style={[styles.locationSelectIcon, { fontSize: 18 * scale }]}>📍</Text>
+                    <Text style={[styles.locationSelectText, { fontSize: 15 * scale }]}>GPS（現在地）</Text>
+                    {!daySchedule.originLocationId && <Text style={[styles.checkmark, { fontSize: 18 * scale }]}>✓</Text>}
                   </TouchableOpacity>
 
                   {settings.locations.map((location) => (
@@ -411,40 +422,42 @@ export const SettingsScreen: React.FC = () => {
                       key={`origin-${location.id}`}
                       style={[
                         styles.locationSelectItem,
+                        { padding: 12 * scale },
                         daySchedule.originLocationId === location.id &&
                           styles.locationSelectItemSelected,
                       ]}
                       onPress={() => handleDayOriginChange(location.id)}
                     >
-                      <Text style={styles.locationSelectIcon}>🏠</Text>
-                      <Text style={styles.locationSelectText}>{location.name}</Text>
+                      <Text style={[styles.locationSelectIcon, { fontSize: 18 * scale }]}>🏠</Text>
+                      <Text style={[styles.locationSelectText, { fontSize: 15 * scale }]}>{location.name}</Text>
                       {daySchedule.originLocationId === location.id && (
-                        <Text style={styles.checkmark}>✓</Text>
+                        <Text style={[styles.checkmark, { fontSize: 18 * scale }]}>✓</Text>
                       )}
                     </TouchableOpacity>
                   ))}
 
                   <TouchableOpacity
-                    style={styles.addLocationButton}
+                    style={[styles.addLocationButton, { padding: 12 * scale }]}
                     onPress={() => openLocationPicker('origin')}
                   >
-                    <Text style={styles.addLocationButtonText}>＋ 新しい地点を追加</Text>
+                    <Text style={[styles.addLocationButtonText, { fontSize: 14 * scale }]}>＋ 新しい地点を追加</Text>
                   </TouchableOpacity>
                 </View>
 
                 {/* 目的地選択 */}
                 <View style={styles.locationSection}>
-                  <Text style={styles.locationTitle}>🏢 目的地</Text>
+                  <Text style={[styles.locationTitle, { fontSize: 16 * scale }]}>🏢 目的地</Text>
                   <TouchableOpacity
                     style={[
                       styles.locationSelectItem,
+                      { padding: 12 * scale },
                       !daySchedule.destinationLocationId && styles.locationSelectItemSelected,
                     ]}
                     onPress={() => handleDayDestinationChange(null)}
                   >
-                    <Text style={styles.locationSelectIcon}>❌</Text>
-                    <Text style={styles.locationSelectText}>設定しない</Text>
-                    {!daySchedule.destinationLocationId && <Text style={styles.checkmark}>✓</Text>}
+                    <Text style={[styles.locationSelectIcon, { fontSize: 18 * scale }]}>❌</Text>
+                    <Text style={[styles.locationSelectText, { fontSize: 15 * scale }]}>設定しない</Text>
+                    {!daySchedule.destinationLocationId && <Text style={[styles.checkmark, { fontSize: 18 * scale }]}>✓</Text>}
                   </TouchableOpacity>
 
                   {settings.locations.map((location) => (
@@ -452,43 +465,44 @@ export const SettingsScreen: React.FC = () => {
                       key={`dest-${location.id}`}
                       style={[
                         styles.locationSelectItem,
+                        { padding: 12 * scale },
                         daySchedule.destinationLocationId === location.id &&
                           styles.locationSelectItemSelected,
                       ]}
                       onPress={() => handleDayDestinationChange(location.id)}
                     >
-                      <Text style={styles.locationSelectIcon}>🏢</Text>
-                      <Text style={styles.locationSelectText}>{location.name}</Text>
+                      <Text style={[styles.locationSelectIcon, { fontSize: 18 * scale }]}>🏢</Text>
+                      <Text style={[styles.locationSelectText, { fontSize: 15 * scale }]}>{location.name}</Text>
                       {daySchedule.destinationLocationId === location.id && (
-                        <Text style={styles.checkmark}>✓</Text>
+                        <Text style={[styles.checkmark, { fontSize: 18 * scale }]}>✓</Text>
                       )}
                     </TouchableOpacity>
                   ))}
 
                   <TouchableOpacity
-                    style={styles.addLocationButton}
+                    style={[styles.addLocationButton, { padding: 12 * scale }]}
                     onPress={() => openLocationPicker('destination')}
                   >
-                    <Text style={styles.addLocationButtonText}>＋ 新しい地点を追加</Text>
+                    <Text style={[styles.addLocationButtonText, { fontSize: 14 * scale }]}>＋ 新しい地点を追加</Text>
                   </TouchableOpacity>
                 </View>
 
                 {/* 外出時間 */}
                 <View style={styles.outingTimeSection}>
-                  <Text style={styles.locationTitle}>🕐 外出時間</Text>
+                  <Text style={[styles.locationTitle, { fontSize: 16 * scale }]}>🕐 外出時間</Text>
                   <View style={styles.outingTimeButtons}>
                     <TouchableOpacity
-                      style={styles.timeButton}
+                      style={[styles.timeButton, { paddingHorizontal: 25 * scale, paddingVertical: 12 * scale }]}
                       onPress={() => setShowStartPicker(true)}
                     >
-                      <Text style={styles.timeButtonText}>{daySchedule.outingStart}</Text>
+                      <Text style={[styles.timeButtonText, { fontSize: 18 * scale }]}>{daySchedule.outingStart}</Text>
                     </TouchableOpacity>
-                    <Text style={styles.timeSeparator}>〜</Text>
+                    <Text style={[styles.timeSeparator, { fontSize: 18 * scale }]}>〜</Text>
                     <TouchableOpacity
-                      style={styles.timeButton}
+                      style={[styles.timeButton, { paddingHorizontal: 25 * scale, paddingVertical: 12 * scale }]}
                       onPress={() => setShowEndPicker(true)}
                     >
-                      <Text style={styles.timeButtonText}>{daySchedule.outingEnd}</Text>
+                      <Text style={[styles.timeButtonText, { fontSize: 18 * scale }]}>{daySchedule.outingEnd}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -496,36 +510,36 @@ export const SettingsScreen: React.FC = () => {
             )}
 
             {/* 平日に適用ボタン */}
-            <TouchableOpacity style={styles.applyWeekdaysButton} onPress={applyToWeekdays}>
-              <Text style={styles.applyWeekdaysButtonText}>平日（月〜金）に同じ設定を適用</Text>
+            <TouchableOpacity style={[styles.applyWeekdaysButton, { padding: 14 * scale }]} onPress={applyToWeekdays}>
+              <Text style={[styles.applyWeekdaysButtonText, { fontSize: 14 * scale }]}>平日（月〜金）に同じ設定を適用</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* 登録済み地点の管理 */}
         {settings.locations.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>登録済み地点</Text>
+          <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
+            <Text style={[styles.sectionTitle, { fontSize: 14 * scale }]}>登録済み地点</Text>
             {settings.locations.map((location) => (
               <TouchableOpacity
                 key={location.id}
-                style={styles.registeredLocation}
+                style={[styles.registeredLocation, { padding: 15 * scale }]}
                 onLongPress={() => handleRemoveLocation(location.id)}
               >
-                <Text style={styles.registeredLocationName}>{location.name}</Text>
-                <Text style={styles.registeredLocationHint}>長押しで削除</Text>
+                <Text style={[styles.registeredLocationName, { fontSize: 16 * scale }]}>{location.name}</Text>
+                <Text style={[styles.registeredLocationHint, { fontSize: 12 * scale }]}>長押しで削除</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
         {/* 通知設定 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>通知設定</Text>
-          <View style={styles.settingRow}>
+        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14 * scale }]}>通知設定</Text>
+          <View style={[styles.settingRow, { paddingVertical: 12 * scale }]}>
             <View>
-              <Text style={styles.settingLabel}>毎朝の通知</Text>
-              <Text style={styles.settingDescription}>
+              <Text style={[styles.settingLabel, { fontSize: 16 * scale }]}>毎朝の通知</Text>
+              <Text style={[styles.settingDescription, { fontSize: 12 * scale }]}>
                 傘の要否を毎朝通知します
               </Text>
             </View>
@@ -533,38 +547,40 @@ export const SettingsScreen: React.FC = () => {
               value={settings.notificationEnabled}
               onValueChange={handleNotificationToggle}
               trackColor={{ false: '#ddd', true: '#4A90D9' }}
+              style={{ transform: [{ scale: scale }] }}
             />
           </View>
 
           {settings.notificationEnabled && (
             <TouchableOpacity
-              style={styles.settingRow}
+              style={[styles.settingRow, { paddingVertical: 12 * scale }]}
               onPress={() => setShowNotificationPicker(true)}
             >
               <View>
-                <Text style={styles.settingLabel}>通知時刻</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={[styles.settingLabel, { fontSize: 16 * scale }]}>通知時刻</Text>
+                <Text style={[styles.settingDescription, { fontSize: 12 * scale }]}>
                   毎日この時刻に通知します
                 </Text>
               </View>
-              <Text style={styles.settingValue}>{settings.notificationTime}</Text>
+              <Text style={[styles.settingValue, { fontSize: 16 * scale }]}>{settings.notificationTime}</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* 傘判断基準設定 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>傘判断基準</Text>
+        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14 * scale }]}>傘判断基準</Text>
 
           {/* 降水確率の閾値 */}
           <View style={styles.criteriaSection}>
-            <Text style={styles.criteriaLabel}>降水確率</Text>
-            <View style={styles.criteriaOptions}>
+            <Text style={[styles.criteriaLabel, { fontSize: 15 * scale }]}>降水確率</Text>
+            <View style={[styles.criteriaOptions, { gap: 8 * scale }]}>
               {POP_OPTIONS.map((value) => (
                 <TouchableOpacity
                   key={`pop-${value}`}
                   style={[
                     styles.criteriaOption,
+                    { paddingVertical: 8 * scale, paddingHorizontal: 16 * scale },
                     settings.umbrellaCriteria.popThreshold === value &&
                       styles.criteriaOptionSelected,
                   ]}
@@ -573,6 +589,7 @@ export const SettingsScreen: React.FC = () => {
                   <Text
                     style={[
                       styles.criteriaOptionText,
+                      { fontSize: 14 * scale },
                       settings.umbrellaCriteria.popThreshold === value &&
                         styles.criteriaOptionTextSelected,
                     ]}
@@ -582,18 +599,19 @@ export const SettingsScreen: React.FC = () => {
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={styles.criteriaHint}>以上で傘必要</Text>
+            <Text style={[styles.criteriaHint, { fontSize: 12 * scale }]}>以上で傘必要</Text>
           </View>
 
           {/* 降水量の閾値 */}
           <View style={styles.criteriaSection}>
-            <Text style={styles.criteriaLabel}>降水量</Text>
-            <View style={styles.criteriaOptions}>
+            <Text style={[styles.criteriaLabel, { fontSize: 15 * scale }]}>降水量</Text>
+            <View style={[styles.criteriaOptions, { gap: 8 * scale }]}>
               {PRECIP_OPTIONS.map((value) => (
                 <TouchableOpacity
                   key={`precip-${value}`}
                   style={[
                     styles.criteriaOption,
+                    { paddingVertical: 8 * scale, paddingHorizontal: 16 * scale },
                     settings.umbrellaCriteria.precipitationThreshold === value &&
                       styles.criteriaOptionSelected,
                   ]}
@@ -602,6 +620,7 @@ export const SettingsScreen: React.FC = () => {
                   <Text
                     style={[
                       styles.criteriaOptionText,
+                      { fontSize: 14 * scale },
                       settings.umbrellaCriteria.precipitationThreshold === value &&
                         styles.criteriaOptionTextSelected,
                     ]}
@@ -611,16 +630,17 @@ export const SettingsScreen: React.FC = () => {
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={styles.criteriaHint}>以上で傘必要</Text>
+            <Text style={[styles.criteriaHint, { fontSize: 12 * scale }]}>以上で傘必要</Text>
           </View>
 
           {/* AND/OR 条件 */}
           <View style={styles.criteriaSection}>
-            <Text style={styles.criteriaLabel}>条件の組み合わせ</Text>
-            <View style={styles.logicOptions}>
+            <Text style={[styles.criteriaLabel, { fontSize: 15 * scale }]}>条件の組み合わせ</Text>
+            <View style={[styles.logicOptions, { gap: 10 * scale }]}>
               <TouchableOpacity
                 style={[
                   styles.logicOption,
+                  { padding: 12 * scale },
                   settings.umbrellaCriteria.logic === 'or' && styles.logicOptionSelected,
                 ]}
                 onPress={() => handleLogicChange('or')}
@@ -628,19 +648,21 @@ export const SettingsScreen: React.FC = () => {
                 <Text
                   style={[
                     styles.logicOptionText,
+                    { fontSize: 15 * scale },
                     settings.umbrellaCriteria.logic === 'or' &&
                       styles.logicOptionTextSelected,
                   ]}
                 >
                   どちらか (OR)
                 </Text>
-                <Text style={styles.logicOptionHint}>
+                <Text style={[styles.logicOptionHint, { fontSize: 12 * scale }]}>
                   確率または降水量のどちらかが閾値以上
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.logicOption,
+                  { padding: 12 * scale },
                   settings.umbrellaCriteria.logic === 'and' && styles.logicOptionSelected,
                 ]}
                 onPress={() => handleLogicChange('and')}
@@ -648,13 +670,14 @@ export const SettingsScreen: React.FC = () => {
                 <Text
                   style={[
                     styles.logicOptionText,
+                    { fontSize: 15 * scale },
                     settings.umbrellaCriteria.logic === 'and' &&
                       styles.logicOptionTextSelected,
                   ]}
                 >
                   両方 (AND)
                 </Text>
-                <Text style={styles.logicOptionHint}>
+                <Text style={[styles.logicOptionHint, { fontSize: 12 * scale }]}>
                   確率と降水量の両方が閾値以上
                 </Text>
               </TouchableOpacity>
@@ -663,41 +686,41 @@ export const SettingsScreen: React.FC = () => {
         </View>
 
         {/* 法的情報 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>法的情報</Text>
+        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14 * scale }]}>法的情報</Text>
           <TouchableOpacity
-            style={styles.legalItem}
+            style={[styles.legalItem, { paddingVertical: 14 * scale }]}
             onPress={() => navigation.navigate('Terms')}
           >
-            <Text style={styles.legalItemText}>利用規約</Text>
-            <Text style={styles.legalItemArrow}>›</Text>
+            <Text style={[styles.legalItemText, { fontSize: 16 * scale }]}>利用規約</Text>
+            <Text style={[styles.legalItemArrow, { fontSize: 20 * scale }]}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.legalItem}
+            style={[styles.legalItem, { paddingVertical: 14 * scale }]}
             onPress={() => navigation.navigate('Disclaimer')}
           >
-            <Text style={styles.legalItemText}>免責事項</Text>
-            <Text style={styles.legalItemArrow}>›</Text>
+            <Text style={[styles.legalItemText, { fontSize: 16 * scale }]}>免責事項</Text>
+            <Text style={[styles.legalItemArrow, { fontSize: 20 * scale }]}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.legalItem}
+            style={[styles.legalItem, { paddingVertical: 14 * scale }]}
             onPress={() => navigation.navigate('License')}
           >
-            <Text style={styles.legalItemText}>ライセンス情報</Text>
-            <Text style={styles.legalItemArrow}>›</Text>
+            <Text style={[styles.legalItemText, { fontSize: 16 * scale }]}>ライセンス情報</Text>
+            <Text style={[styles.legalItemArrow, { fontSize: 20 * scale }]}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.legalItem}
+            style={[styles.legalItem, { paddingVertical: 14 * scale }]}
             onPress={() => Linking.openURL(SUPPORT_URL)}
           >
-            <Text style={styles.legalItemText}>サポートサイト</Text>
-            <Text style={styles.legalItemArrow}>↗</Text>
+            <Text style={[styles.legalItemText, { fontSize: 16 * scale }]}>サポートサイト</Text>
+            <Text style={[styles.legalItemArrow, { fontSize: 20 * scale }]}>↗</Text>
           </TouchableOpacity>
         </View>
 
         {/* バージョン情報 */}
-        <View style={styles.section}>
-          <Text style={styles.versionText}>傘持ってく？ v1.1.0</Text>
+        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
+          <Text style={[styles.versionText, { fontSize: 14 * scale }]}>傘持ってく？ v1.1.0</Text>
         </View>
       </ScrollView>
 
