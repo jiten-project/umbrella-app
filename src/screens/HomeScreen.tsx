@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -43,6 +44,11 @@ type RootStackParamList = {
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { width } = useWindowDimensions();
+
+  // iPad判定（幅768px以上をiPadとみなす）
+  const isTablet = width >= 768;
+  const scale = isTablet ? 1.5 : 1;
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -325,8 +331,8 @@ export const HomeScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4A90D9" />
-          <Text style={styles.loadingText}>天気データを取得中...</Text>
+          <ActivityIndicator size={isTablet ? 'large' : 'large'} color="#4A90D9" />
+          <Text style={[styles.loadingText, { fontSize: 16 * scale }]}>天気データを取得中...</Text>
         </View>
       </SafeAreaView>
     );
@@ -342,9 +348,41 @@ export const HomeScreen: React.FC = () => {
       >
         {/* ヘッダー */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>傘持ってく？</Text>
-            <Text style={styles.headerDate}>
+          <Text style={[styles.headerTitle, { fontSize: 24 * scale }]}>傘持ってく？</Text>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <Text style={[styles.settingsIcon, { fontSize: 24 * scale }]}>⚙️</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* メインコンテンツ */}
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={[styles.errorIcon, { fontSize: 48 * scale }]}>{getErrorIcon(error.type)}</Text>
+            <Text style={[styles.errorText, { fontSize: 16 * scale }]}>{getErrorMessage(error)}</Text>
+            <View style={styles.errorActions}>
+              <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+                <Text style={[styles.retryButtonText, { fontSize: 16 * scale }]}>再試行</Text>
+              </TouchableOpacity>
+              {(error.type === 'manual_location' || error.type === 'permission') && (
+                <TouchableOpacity
+                  style={styles.manualButton}
+                  onPress={() => navigation.navigate('Settings')}
+                >
+                  <Text style={[styles.manualButtonText, { fontSize: 16 * scale }]}>設定で手動選択</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        ) : combinedResult ? (
+          <TouchableOpacity
+            style={[styles.mainCard, { backgroundColor: getBackgroundColor(), padding: 30 * scale }]}
+            onPress={() => setExpanded(!expanded)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.cardDate, { fontSize: 16 * scale }]}>
               {(() => {
                 const now = new Date();
                 const month = now.getMonth() + 1;
@@ -353,45 +391,11 @@ export const HomeScreen: React.FC = () => {
                 return `${month}月${date}日（${DAY_NAMES[dayOfWeek]}）`;
               })()}
             </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={() => navigation.navigate('Settings')}
-          >
-            <Text style={styles.settingsIcon}>⚙️</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* メインコンテンツ */}
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorIcon}>{getErrorIcon(error.type)}</Text>
-            <Text style={styles.errorText}>{getErrorMessage(error)}</Text>
-            <View style={styles.errorActions}>
-              <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
-                <Text style={styles.retryButtonText}>再試行</Text>
-              </TouchableOpacity>
-              {(error.type === 'manual_location' || error.type === 'permission') && (
-                <TouchableOpacity
-                  style={styles.manualButton}
-                  onPress={() => navigation.navigate('Settings')}
-                >
-                  <Text style={styles.manualButtonText}>設定で手動選択</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        ) : combinedResult ? (
-          <TouchableOpacity
-            style={[styles.mainCard, { backgroundColor: getBackgroundColor() }]}
-            onPress={() => setExpanded(!expanded)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.mainIcon}>{getIcon()}</Text>
-            <Text style={styles.mainMessage}>{combinedResult.overallMessage}</Text>
+            <Text style={[styles.mainIcon, { fontSize: 80 * scale }]}>{getIcon()}</Text>
+            <Text style={[styles.mainMessage, { fontSize: 24 * scale }]}>{combinedResult.overallMessage}</Text>
 
             {!expanded && (
-              <Text style={styles.tapHint}>タップで詳細を見る</Text>
+              <Text style={[styles.tapHint, { fontSize: 14 * scale }]}>タップで詳細を見る</Text>
             )}
 
             {expanded && (
@@ -399,18 +403,15 @@ export const HomeScreen: React.FC = () => {
                 {/* 出発地の詳細 */}
                 {combinedResult.origin && (
                   <View style={styles.locationDetail}>
-                    <Text style={styles.locationHeader}>
+                    <Text style={[styles.locationHeader, { fontSize: 16 * scale }]}>
                       🏠 {combinedResult.origin.location.name}
                     </Text>
-                    <Text style={styles.locationPop}>
-                      降水確率: {combinedResult.origin.result.maxPop}%
-                    </Text>
                     {combinedResult.origin.result.hourlyForecasts.map((f, i) => (
-                      <View key={i} style={styles.forecastRow}>
-                        <Text style={styles.forecastTime}>{f.time}</Text>
+                      <View key={i} style={[styles.forecastRow, { paddingVertical: 4 * scale, paddingHorizontal: 10 * scale }]}>
+                        <Text style={[styles.forecastTime, { fontSize: 14 * scale }]}>{f.time}</Text>
                         <View style={styles.forecastMetrics}>
-                          <Text style={styles.forecastPop}>{f.pop}%</Text>
-                          <Text style={styles.forecastPrecip}>{f.precipitation}mm</Text>
+                          <Text style={[styles.forecastPop, { fontSize: 14 * scale, width: 50 * scale }]}>{f.pop}%</Text>
+                          <Text style={[styles.forecastPrecip, { fontSize: 14 * scale, width: 60 * scale, marginLeft: 12 * scale }]}>{f.precipitation}mm</Text>
                         </View>
                       </View>
                     ))}
@@ -420,18 +421,15 @@ export const HomeScreen: React.FC = () => {
                 {/* 目的地の詳細 */}
                 {combinedResult.destination && (
                   <View style={styles.locationDetail}>
-                    <Text style={styles.locationHeader}>
+                    <Text style={[styles.locationHeader, { fontSize: 16 * scale }]}>
                       🏢 {combinedResult.destination.location.name}
                     </Text>
-                    <Text style={styles.locationPop}>
-                      降水確率: {combinedResult.destination.result.maxPop}%
-                    </Text>
                     {combinedResult.destination.result.hourlyForecasts.map((f, i) => (
-                      <View key={i} style={styles.forecastRow}>
-                        <Text style={styles.forecastTime}>{f.time}</Text>
+                      <View key={i} style={[styles.forecastRow, { paddingVertical: 4 * scale, paddingHorizontal: 10 * scale }]}>
+                        <Text style={[styles.forecastTime, { fontSize: 14 * scale }]}>{f.time}</Text>
                         <View style={styles.forecastMetrics}>
-                          <Text style={styles.forecastPop}>{f.pop}%</Text>
-                          <Text style={styles.forecastPrecip}>{f.precipitation}mm</Text>
+                          <Text style={[styles.forecastPop, { fontSize: 14 * scale, width: 50 * scale }]}>{f.pop}%</Text>
+                          <Text style={[styles.forecastPrecip, { fontSize: 14 * scale, width: 60 * scale, marginLeft: 12 * scale }]}>{f.precipitation}mm</Text>
                         </View>
                       </View>
                     ))}
@@ -439,7 +437,7 @@ export const HomeScreen: React.FC = () => {
                 )}
 
                 {!combinedResult.origin && !combinedResult.destination && (
-                  <Text style={styles.noLocationText}>
+                  <Text style={[styles.noLocationText, { fontSize: 14 * scale }]}>
                     設定から出発地・目的地を登録してください
                   </Text>
                 )}
@@ -450,22 +448,22 @@ export const HomeScreen: React.FC = () => {
 
         {/* 地点サマリー */}
         {combinedResult && (
-          <View style={styles.locationSummary}>
+          <View style={[styles.locationSummary, { padding: 15 * scale }]}>
             <TouchableOpacity
               style={styles.locationSummaryItem}
               onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.7}
             >
-              <Text style={styles.locationSummaryLabel}>🏠 出発地</Text>
-              <Text style={styles.locationSummaryValue}>
+              <Text style={[styles.locationSummaryLabel, { fontSize: 12 * scale }]}>🏠 出発地</Text>
+              <Text style={[styles.locationSummaryValue, { fontSize: 14 * scale }]}>
                 {combinedResult.origin?.location.name || 'GPS（現在地）'}
               </Text>
               {combinedResult.origin && (
-                <Text style={styles.locationSummaryPop}>
+                <Text style={[styles.locationSummaryPop, { fontSize: 18 * scale }]}>
                   {combinedResult.origin.result.maxPop}%
                 </Text>
               )}
-              <Text style={styles.locationSummaryHint}>タップで変更</Text>
+              <Text style={[styles.locationSummaryHint, { fontSize: 10 * scale }]}>タップで変更</Text>
             </TouchableOpacity>
             <View style={styles.locationSummaryDivider} />
             <TouchableOpacity
@@ -473,37 +471,37 @@ export const HomeScreen: React.FC = () => {
               onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.7}
             >
-              <Text style={styles.locationSummaryLabel}>🏢 目的地</Text>
-              <Text style={styles.locationSummaryValue}>
+              <Text style={[styles.locationSummaryLabel, { fontSize: 12 * scale }]}>🏢 目的地</Text>
+              <Text style={[styles.locationSummaryValue, { fontSize: 14 * scale }]}>
                 {combinedResult.destination?.location.name || '未設定'}
               </Text>
               {combinedResult.destination && (
-                <Text style={styles.locationSummaryPop}>
+                <Text style={[styles.locationSummaryPop, { fontSize: 18 * scale }]}>
                   {combinedResult.destination.result.maxPop}%
                 </Text>
               )}
-              <Text style={styles.locationSummaryHint}>タップで変更</Text>
+              <Text style={[styles.locationSummaryHint, { fontSize: 10 * scale }]}>タップで変更</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* 外出時間設定（外出予定がある日のみ表示） */}
         {!isNoOutingDay && (
-          <View style={styles.outingTimeContainer}>
-            <Text style={styles.outingTimeLabel}>外出予定時間</Text>
+          <View style={[styles.outingTimeContainer, { padding: 20 * scale }]}>
+            <Text style={[styles.outingTimeLabel, { fontSize: 14 * scale }]}>外出予定時間</Text>
             <View style={styles.outingTimeButtons}>
               <TouchableOpacity
-                style={styles.timeButton}
+                style={[styles.timeButton, { paddingHorizontal: 25 * scale, paddingVertical: 12 * scale }]}
                 onPress={() => setShowStartPicker(true)}
               >
-                <Text style={styles.timeButtonText}>{outingTime.start}</Text>
+                <Text style={[styles.timeButtonText, { fontSize: 20 * scale }]}>{outingTime.start}</Text>
               </TouchableOpacity>
-              <Text style={styles.timeSeparator}>〜</Text>
+              <Text style={[styles.timeSeparator, { fontSize: 20 * scale }]}>〜</Text>
               <TouchableOpacity
-                style={styles.timeButton}
+                style={[styles.timeButton, { paddingHorizontal: 25 * scale, paddingVertical: 12 * scale }]}
                 onPress={() => setShowEndPicker(true)}
               >
-                <Text style={styles.timeButtonText}>{outingTime.end}</Text>
+                <Text style={[styles.timeButtonText, { fontSize: 20 * scale }]}>{outingTime.end}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -512,10 +510,10 @@ export const HomeScreen: React.FC = () => {
         {/* 外出予定なしの場合の設定誘導 */}
         {isNoOutingDay && (
           <TouchableOpacity
-            style={styles.noOutingSettingsButton}
+            style={[styles.noOutingSettingsButton, { padding: 16 * scale }]}
             onPress={() => navigation.navigate('Settings')}
           >
-            <Text style={styles.noOutingSettingsText}>
+            <Text style={[styles.noOutingSettingsText, { fontSize: 16 * scale }]}>
               曜日別の設定を変更する
             </Text>
           </TouchableOpacity>
@@ -569,18 +567,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
   },
-  headerLeft: {
-    flex: 1,
-  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-  },
-  headerDate: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
   },
   settingsButton: {
     padding: 8,
@@ -642,6 +632,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 5,
+  },
+  cardDate: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 10,
   },
   mainIcon: {
     fontSize: 80,
