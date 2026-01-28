@@ -342,7 +342,18 @@ export const HomeScreen: React.FC = () => {
       >
         {/* ヘッダー */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>傘持ってく？</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerTitle}>傘持ってく？</Text>
+            <Text style={styles.headerDate}>
+              {(() => {
+                const now = new Date();
+                const month = now.getMonth() + 1;
+                const date = now.getDate();
+                const dayOfWeek = now.getDay() as DayOfWeek;
+                return `${month}月${date}日（${DAY_NAMES[dayOfWeek]}）`;
+              })()}
+            </Text>
+          </View>
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={() => navigation.navigate('Settings')}
@@ -558,10 +569,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
   },
+  headerLeft: {
+    flex: 1,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
+  },
+  headerDate: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
   },
   settingsButton: {
     padding: 8,
