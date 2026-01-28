@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jiten0410.umbrella",
-      "buildNumber": "5",
+      "buildNumber": "7",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "現在地の天気予報を取得するために位置情報を使用します",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "バックグラウンドでも天気情報を更新するために位置情報を使用します",
