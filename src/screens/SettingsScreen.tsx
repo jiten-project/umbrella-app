@@ -34,6 +34,7 @@ import {
   syncDailyNotificationWithSettings,
 } from '../services/notificationService';
 import { Settings, Location, UmbrellaCriteriaLogic, DayOfWeek, DaySchedule } from '../types';
+import { useTheme } from '../theme';
 
 type LocationPickerMode = 'add' | 'origin' | 'destination';
 
@@ -41,11 +42,22 @@ type LocationPickerMode = 'add' | 'origin' | 'destination';
 const POP_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 const PRECIP_OPTIONS = [0, 0.5, 1, 2, 3, 5, 10, 20];
 
-const SUPPORT_URL = 'https://your-username.github.io/kasa-motteku/';
+// 外出前通知の時間選択肢（分）
+const LEAD_TIME_OPTIONS = [
+  { value: 15, label: '15分前' },
+  { value: 30, label: '30分前' },
+  { value: 45, label: '45分前' },
+  { value: 60, label: '1時間前' },
+  { value: 90, label: '1時間30分前' },
+  { value: 120, label: '2時間前' },
+];
+
+const SUPPORT_URL = 'https://jiten-project.github.io/umbrella-app/';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { width } = useWindowDimensions();
+  const { theme } = useTheme();
 
   // iPad判定（幅768px以上をiPadとみなす）
   const isTablet = width >= 768;
@@ -99,6 +111,44 @@ export const SettingsScreen: React.FC = () => {
     setShowNotificationPicker(false);
 
     await syncDailyNotificationWithSettings();
+  };
+
+  const handleBeforeOutingToggle = async (enabled: boolean) => {
+    if (enabled) {
+      const hasPermission = await requestNotificationPermission();
+      if (!hasPermission) {
+        Alert.alert(
+          '通知の許可が必要です',
+          '設定アプリから通知を許可してください',
+          [
+            { text: 'キャンセル', style: 'cancel' },
+            {
+              text: '設定を開く',
+              onPress: () => Linking.openSettings(),
+            },
+          ]
+        );
+        return;
+      }
+    }
+
+    const newSettings = { ...settings, beforeOutingNotificationEnabled: enabled };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+    await syncDailyNotificationWithSettings();
+  };
+
+  const handleLeadTimeChange = async (minutes: number) => {
+    const newSettings = { ...settings, notificationLeadTime: minutes };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+    await syncDailyNotificationWithSettings();
+  };
+
+  const handleShowTemperatureToggle = async (enabled: boolean) => {
+    const newSettings = { ...settings, showTemperature: enabled };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
   };
 
   const openLocationPicker = (mode: LocationPickerMode) => {
@@ -254,7 +304,7 @@ export const SettingsScreen: React.FC = () => {
   };
 
   // 曜日設定を更新
-  const updateDaySchedule = async (schedule: DaySchedule) => {
+  const updateDaySchedule = async (schedule: DaySchedule, syncNotification = false) => {
     const newWeeklySchedule = {
       ...settings.weeklySchedule ?? DEFAULT_WEEKLY_SCHEDULE,
       [selectedDay]: schedule,
@@ -267,12 +317,18 @@ export const SettingsScreen: React.FC = () => {
 
     setSettings(newSettings);
     await saveSettings(newSettings);
+
+    // 外出前通知が有効の場合は通知を再スケジュール
+    if (syncNotification && settings.beforeOutingNotificationEnabled) {
+      await syncDailyNotificationWithSettings();
+    }
   };
 
   // 外出予定の有無を切り替え
   const handleDayEnabledToggle = async (enabled: boolean) => {
     const schedule = getSelectedDaySchedule();
-    await updateDaySchedule({ ...schedule, enabled });
+    // 外出予定の変更は通知スケジュールに影響するので再スケジュール
+    await updateDaySchedule({ ...schedule, enabled }, true);
   };
 
   // 曜日設定の出発地を変更
@@ -292,11 +348,12 @@ export const SettingsScreen: React.FC = () => {
     const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
     const schedule = getSelectedDaySchedule();
 
+    // 外出開始時刻の変更時は通知を再スケジュール
     await updateDaySchedule({
       ...schedule,
       outingStart: type === 'start' ? timeStr : schedule.outingStart,
       outingEnd: type === 'end' ? timeStr : schedule.outingEnd,
-    });
+    }, type === 'start');
 
     if (type === 'start') {
       setShowStartPicker(false);
@@ -327,6 +384,12 @@ export const SettingsScreen: React.FC = () => {
             const newSettings = { ...settings, weeklySchedule: newWeeklySchedule };
             setSettings(newSettings);
             await saveSettings(newSettings);
+
+            // 外出前通知が有効の場合は通知を再スケジュール
+            if (settings.beforeOutingNotificationEnabled) {
+              await syncDailyNotificationWithSettings();
+            }
+
             Alert.alert('完了', '月〜金に同じ設定を適用しました');
           },
         },
@@ -337,11 +400,11 @@ export const SettingsScreen: React.FC = () => {
   const daySchedule = getSelectedDaySchedule();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView>
         {/* 曜日別設定 */}
-        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
-          <Text style={[styles.sectionTitle, { fontSize: 14 * scale }]}>曜日別設定</Text>
+        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale, backgroundColor: theme.card }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14 * scale, color: theme.textSecondary }]}>曜日別設定</Text>
 
           {/* 曜日タブ */}
           <ScrollView
@@ -534,19 +597,21 @@ export const SettingsScreen: React.FC = () => {
         )}
 
         {/* 通知設定 */}
-        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
-          <Text style={[styles.sectionTitle, { fontSize: 14 * scale }]}>通知設定</Text>
+        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale, backgroundColor: theme.card }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14 * scale, color: theme.textSecondary }]}>通知設定</Text>
+
+          {/* 固定時刻通知 */}
           <View style={[styles.settingRow, { paddingVertical: 12 * scale }]}>
             <View>
-              <Text style={[styles.settingLabel, { fontSize: 16 * scale }]}>毎朝の通知</Text>
-              <Text style={[styles.settingDescription, { fontSize: 12 * scale }]}>
-                傘の要否を毎朝通知します
+              <Text style={[styles.settingLabel, { fontSize: 16 * scale, color: theme.text }]}>固定時刻通知</Text>
+              <Text style={[styles.settingDescription, { fontSize: 12 * scale, color: theme.textMuted }]}>
+                毎日同じ時刻に通知
               </Text>
             </View>
             <Switch
               value={settings.notificationEnabled}
               onValueChange={handleNotificationToggle}
-              trackColor={{ false: '#ddd', true: '#4A90D9' }}
+              trackColor={{ false: theme.border, true: theme.primary }}
               style={{ transform: [{ scale: scale }] }}
             />
           </View>
@@ -557,19 +622,83 @@ export const SettingsScreen: React.FC = () => {
               onPress={() => setShowNotificationPicker(true)}
             >
               <View>
-                <Text style={[styles.settingLabel, { fontSize: 16 * scale }]}>通知時刻</Text>
-                <Text style={[styles.settingDescription, { fontSize: 12 * scale }]}>
+                <Text style={[styles.settingLabel, { fontSize: 16 * scale, color: theme.text }]}>通知時刻</Text>
+                <Text style={[styles.settingDescription, { fontSize: 12 * scale, color: theme.textMuted }]}>
                   毎日この時刻に通知します
                 </Text>
               </View>
-              <Text style={[styles.settingValue, { fontSize: 16 * scale }]}>{settings.notificationTime}</Text>
+              <Text style={[styles.settingValue, { fontSize: 16 * scale, color: theme.primary }]}>{settings.notificationTime}</Text>
             </TouchableOpacity>
+          )}
+
+          {/* 外出前通知 */}
+          <View style={[styles.settingRow, { paddingVertical: 12 * scale }]}>
+            <View>
+              <Text style={[styles.settingLabel, { fontSize: 16 * scale, color: theme.text }]}>外出前通知</Text>
+              <Text style={[styles.settingDescription, { fontSize: 12 * scale, color: theme.textMuted }]}>
+                曜日ごとの外出開始時刻の前に通知
+              </Text>
+            </View>
+            <Switch
+              value={settings.beforeOutingNotificationEnabled}
+              onValueChange={handleBeforeOutingToggle}
+              trackColor={{ false: theme.border, true: theme.primary }}
+              style={{ transform: [{ scale: scale }] }}
+            />
+          </View>
+
+          {settings.beforeOutingNotificationEnabled && (
+            <View style={styles.leadTimeSection}>
+              <Text style={[styles.leadTimeLabel, { fontSize: 14 * scale, color: theme.text }]}>何分前に通知しますか？</Text>
+              <View style={[styles.leadTimeOptions, { gap: 8 * scale }]}>
+                {LEAD_TIME_OPTIONS.map((option) => (
+                  <TouchableOpacity
+                    key={`lead-${option.value}`}
+                    style={[
+                      styles.leadTimeOption,
+                      { paddingVertical: 8 * scale, paddingHorizontal: 14 * scale },
+                      (settings.notificationLeadTime ?? 30) === option.value && styles.leadTimeOptionSelected,
+                    ]}
+                    onPress={() => handleLeadTimeChange(option.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.leadTimeOptionText,
+                        { fontSize: 14 * scale },
+                        (settings.notificationLeadTime ?? 30) === option.value && styles.leadTimeOptionTextSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           )}
         </View>
 
+        {/* 表示設定 */}
+        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale, backgroundColor: theme.card }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14 * scale, color: theme.textSecondary }]}>表示設定</Text>
+          <View style={[styles.settingRow, { paddingVertical: 12 * scale }]}>
+            <View>
+              <Text style={[styles.settingLabel, { fontSize: 16 * scale, color: theme.text }]}>気温を表示</Text>
+              <Text style={[styles.settingDescription, { fontSize: 12 * scale, color: theme.textMuted }]}>
+                ホーム画面に最低/最高気温を表示する
+              </Text>
+            </View>
+            <Switch
+              value={settings.showTemperature ?? true}
+              onValueChange={handleShowTemperatureToggle}
+              trackColor={{ false: theme.border, true: theme.primary }}
+              style={{ transform: [{ scale: scale }] }}
+            />
+          </View>
+        </View>
+
         {/* 傘判断基準設定 */}
-        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
-          <Text style={[styles.sectionTitle, { fontSize: 14 * scale }]}>傘判断基準</Text>
+        <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale, backgroundColor: theme.card }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14 * scale, color: theme.textSecondary }]}>傘判断基準</Text>
 
           {/* 降水確率の閾値 */}
           <View style={styles.criteriaSection}>
@@ -720,7 +849,7 @@ export const SettingsScreen: React.FC = () => {
 
         {/* バージョン情報 */}
         <View style={[styles.section, { padding: 15 * scale, marginHorizontal: 15 * scale }]}>
-          <Text style={[styles.versionText, { fontSize: 14 * scale }]}>傘持ってく？ v1.1.0</Text>
+          <Text style={[styles.versionText, { fontSize: 14 * scale }]}>傘持ってく？ v1.2.0</Text>
         </View>
       </ScrollView>
 
@@ -1039,5 +1168,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4A90D9',
     fontWeight: '500',
+  },
+  leadTimeSection: {
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  leadTimeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 10,
+  },
+  leadTimeOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  leadTimeOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  leadTimeOptionSelected: {
+    backgroundColor: '#e8f4fd',
+    borderColor: '#4A90D9',
+  },
+  leadTimeOptionText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  leadTimeOptionTextSelected: {
+    color: '#4A90D9',
+    fontWeight: '600',
   },
 });

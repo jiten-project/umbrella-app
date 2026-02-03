@@ -48,6 +48,8 @@ export const DEFAULT_WEEKLY_SCHEDULE: WeeklySchedule = {
 export const DEFAULT_SETTINGS: Settings = {
   notificationEnabled: false,
   notificationTime: '07:00',
+  notificationLeadTime: 30, // 外出30分前がデフォルト
+  beforeOutingNotificationEnabled: false, // 外出前通知はデフォルトOFF
   defaultOutingStart: '09:00',
   defaultOutingEnd: '18:00',
   locations: [],
@@ -56,6 +58,7 @@ export const DEFAULT_SETTINGS: Settings = {
   destinationLocationId: null, // 目的地（null = 設定なし）
   umbrellaCriteria: DEFAULT_UMBRELLA_CRITERIA,
   weeklySchedule: DEFAULT_WEEKLY_SCHEDULE,
+  showTemperature: true, // デフォルトで気温を表示
 };
 
 // 設定を保存
@@ -109,6 +112,17 @@ export const loadSettings = async (): Promise<Settings> => {
         weeklySchedule = migrateToWeeklySchedule(saved);
       }
 
+      // notificationModeのマイグレーション（排他モード → 独立トグル）
+      if (saved.notificationMode !== undefined && saved.beforeOutingNotificationEnabled === undefined) {
+        if (saved.notificationMode === 'beforeOuting') {
+          saved.beforeOutingNotificationEnabled = saved.notificationEnabled ?? false;
+          saved.notificationEnabled = false;
+        } else {
+          saved.beforeOutingNotificationEnabled = false;
+        }
+        delete saved.notificationMode;
+      }
+
       // umbrellaCriteriaの後方互換性を確保
       return {
         ...DEFAULT_SETTINGS,
@@ -131,6 +145,13 @@ export const loadSettings = async (): Promise<Settings> => {
 export const getTodaySchedule = (settings: Settings): DaySchedule | null => {
   const dayOfWeek = new Date().getDay() as DayOfWeek;
   return getDaySchedule(settings, dayOfWeek);
+};
+
+// 翌日の曜日設定を取得
+export const getTomorrowSchedule = (settings: Settings): DaySchedule | null => {
+  const today = new Date().getDay();
+  const tomorrow = ((today + 1) % 7) as DayOfWeek;
+  return getDaySchedule(settings, tomorrow);
 };
 
 // 指定曜日の設定を取得
