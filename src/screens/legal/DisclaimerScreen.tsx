@@ -13,7 +13,7 @@ export const DisclaimerScreen: React.FC = () => {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Text style={styles.title}>免責事項</Text>
-          <Text style={styles.lastUpdated}>最終更新日: 2026年1月27日</Text>
+          <Text style={styles.lastUpdated}>最終更新日: 2026年2月3日</Text>
 
           <Text style={styles.sectionTitle}>1. 天気予報データについて</Text>
           <Text style={styles.paragraph}>
@@ -65,7 +65,7 @@ export const DisclaimerScreen: React.FC = () => {
 
           <Text style={styles.sectionTitle}>4. 通知機能について</Text>
           <Text style={styles.paragraph}>
-            プッシュ通知は、端末の状態やOS の省電力機能により、指定時刻に届かない場合があります。重要な外出の際は、アプリを直接開いて最新情報をご確認ください。
+            本アプリは「固定時刻通知」と「外出前通知」の2種類の通知を提供しています。いずれの通知も、端末の状態やOSの省電力機能により、指定時刻に届かない場合があります。重要な外出の際は、アプリを直接開いて最新情報をご確認ください。
           </Text>
 
           <Text style={styles.sectionTitle}>5. 損害の免責</Text>

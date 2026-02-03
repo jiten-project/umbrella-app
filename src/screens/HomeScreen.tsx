@@ -17,15 +17,18 @@ import {
   fetchWeatherForecast,
   determineUmbrella,
   determineCombinedUmbrella,
+  extractTemperature,
 } from '../services/weatherApi';
+import { useTheme } from '../theme';
 import { getCurrentLocation } from '../services/locationService';
 import {
   loadSettings,
   saveSettings,
   getTodaySchedule,
+  getTomorrowSchedule,
   DAY_NAMES,
 } from '../services/storageService';
-import { DayOfWeek } from '../types';
+import { DayOfWeek, TemperatureData } from '../types';
 import {
   CombinedUmbrellaResult,
   Settings,
@@ -45,6 +48,7 @@ type RootStackParamList = {
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { width } = useWindowDimensions();
+  const { theme, isDark } = useTheme();
 
   // iPad判定（幅768px以上をiPadとみなす）
   const isTablet = width >= 768;
@@ -56,6 +60,8 @@ export const HomeScreen: React.FC = () => {
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [showingTomorrow, setShowingTomorrow] = useState(false);
+  const [temperature, setTemperature] = useState<TemperatureData | null>(null);
 
   // 外出時間設定モーダル
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -117,13 +123,38 @@ export const HomeScreen: React.FC = () => {
       // 今日の曜日設定を取得
       const todaySchedule = getTodaySchedule(loadedSettings);
 
+      // 外出終了時刻を過ぎているかチェック
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      let useTomorrow = false;
+
+      if (todaySchedule) {
+        const [endHour, endMinute] = todaySchedule.outingEnd.split(':').map(Number);
+        const endMinutes = endHour * 60 + endMinute;
+        // 外出終了時刻を過ぎていたら翌日表示
+        if (currentMinutes > endMinutes) {
+          useTomorrow = true;
+        }
+      } else {
+        // 今日の外出予定がなければ翌日を表示
+        useTomorrow = true;
+      }
+
+      // 使用するスケジュールを決定
+      const targetSchedule = useTomorrow
+        ? getTomorrowSchedule(loadedSettings)
+        : todaySchedule;
+
+      setShowingTomorrow(useTomorrow);
+
       // 外出予定がない場合
-      if (!todaySchedule) {
-        const dayOfWeek = new Date().getDay() as DayOfWeek;
+      if (!targetSchedule) {
+        const today = now.getDay();
+        const targetDay = useTomorrow ? ((today + 1) % 7) as DayOfWeek : today as DayOfWeek;
         setOutingTime({ start: '', end: '' });
         setCombinedResult({
           overallDecision: 'not_required',
-          overallMessage: `${DAY_NAMES[dayOfWeek]}曜日は外出予定がありません`,
+          overallMessage: `${DAY_NAMES[targetDay]}曜日は外出予定がありません`,
           origin: undefined,
           destination: undefined,
         });
@@ -132,8 +163,8 @@ export const HomeScreen: React.FC = () => {
 
       // 曜日設定から外出時間を設定
       setOutingTime({
-        start: todaySchedule.outingStart,
-        end: todaySchedule.outingEnd,
+        start: targetSchedule.outingStart,
+        end: targetSchedule.outingEnd,
       });
 
       let originResult: LocationUmbrellaResult | undefined;
@@ -141,15 +172,15 @@ export const HomeScreen: React.FC = () => {
 
       // 外出時間の設定（曜日設定から取得）
       const outingTimeSettings = {
-        start: todaySchedule.outingStart,
-        end: todaySchedule.outingEnd,
+        start: targetSchedule.outingStart,
+        end: targetSchedule.outingEnd,
       };
 
       // 出発地の天気を取得（曜日設定の出発地を使用）
-      if (todaySchedule.originLocationId) {
+      if (targetSchedule.originLocationId) {
         // 登録済み地点を使用
         const originLocation = loadedSettings.locations.find(
-          (loc) => loc.id === todaySchedule.originLocationId
+          (loc) => loc.id === targetSchedule.originLocationId
         );
         if (originLocation) {
           const forecast = await fetchWeatherForecast(originLocation.areaCode);
@@ -161,6 +192,9 @@ export const HomeScreen: React.FC = () => {
               loadedSettings.umbrellaCriteria
             ),
           };
+          // 気温データを抽出
+          const temp = extractTemperature(forecast);
+          setTemperature(temp);
         }
       } else {
         // GPS で現在地を取得
@@ -200,12 +234,15 @@ export const HomeScreen: React.FC = () => {
             loadedSettings.umbrellaCriteria
           ),
         };
+        // 気温データを抽出
+        const temp = extractTemperature(forecast);
+        setTemperature(temp);
       }
 
       // 目的地の天気を取得（曜日設定の目的地を使用）
-      if (todaySchedule.destinationLocationId) {
+      if (targetSchedule.destinationLocationId) {
         const destLocation = loadedSettings.locations.find(
-          (loc) => loc.id === todaySchedule.destinationLocationId
+          (loc) => loc.id === targetSchedule.destinationLocationId
         );
         if (destLocation) {
           const forecast = await fetchWeatherForecast(destLocation.areaCode);
@@ -269,17 +306,18 @@ export const HomeScreen: React.FC = () => {
       setShowEndPicker(false);
     }
 
-    // 今日の曜日設定を更新
+    // 表示中の曜日設定を更新（翌日表示中なら翌日の曜日）
     if (settings && settings.weeklySchedule) {
-      const dayOfWeek = new Date().getDay() as DayOfWeek;
-      const todaySchedule = settings.weeklySchedule[dayOfWeek];
+      const today = new Date().getDay();
+      const dayOfWeek = (showingTomorrow ? (today + 1) % 7 : today) as DayOfWeek;
+      const targetDaySchedule = settings.weeklySchedule[dayOfWeek];
 
       const newWeeklySchedule = {
         ...settings.weeklySchedule,
         [dayOfWeek]: {
-          ...todaySchedule,
-          outingStart: type === 'start' ? timeStr : todaySchedule.outingStart,
-          outingEnd: type === 'end' ? timeStr : todaySchedule.outingEnd,
+          ...targetDaySchedule,
+          outingStart: type === 'start' ? timeStr : targetDaySchedule.outingStart,
+          outingEnd: type === 'end' ? timeStr : targetDaySchedule.outingEnd,
         },
       };
 
@@ -329,26 +367,41 @@ export const HomeScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size={isTablet ? 'large' : 'large'} color="#4A90D9" />
-          <Text style={[styles.loadingText, { fontSize: 16 * scale }]}>天気データを取得中...</Text>
+          <ActivityIndicator size={isTablet ? 'large' : 'large'} color={theme.primary} />
+          <Text style={[styles.loadingText, { fontSize: 16 * scale, color: theme.textSecondary }]}>天気データを取得中...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // 気温表示用のフォーマット
+  const formatTemperature = (): string | null => {
+    if (!temperature || !settings?.showTemperature) return null;
+    if (temperature.min === null && temperature.max === null) return null;
+
+    const parts: string[] = [];
+    if (temperature.min !== null) parts.push(`${temperature.min}°C`);
+    if (temperature.max !== null) parts.push(`${temperature.max}°C`);
+
+    if (parts.length === 2) {
+      return `🌡️ ${parts[0]} / ${parts[1]}`;
+    }
+    return `🌡️ ${parts[0]}`;
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
         }
       >
         {/* ヘッダー */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { fontSize: 24 * scale }]}>傘持ってく？</Text>
+          <Text style={[styles.headerTitle, { fontSize: 24 * scale, color: theme.text }]}>傘持ってく？</Text>
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={() => navigation.navigate('Settings')}
@@ -361,17 +414,17 @@ export const HomeScreen: React.FC = () => {
         {error ? (
           <View style={styles.errorContainer}>
             <Text style={[styles.errorIcon, { fontSize: 48 * scale }]}>{getErrorIcon(error.type)}</Text>
-            <Text style={[styles.errorText, { fontSize: 16 * scale }]}>{getErrorMessage(error)}</Text>
+            <Text style={[styles.errorText, { fontSize: 16 * scale, color: theme.textSecondary }]}>{getErrorMessage(error)}</Text>
             <View style={styles.errorActions}>
-              <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+              <TouchableOpacity style={[styles.retryButton, { backgroundColor: theme.primary }]} onPress={fetchData}>
                 <Text style={[styles.retryButtonText, { fontSize: 16 * scale }]}>再試行</Text>
               </TouchableOpacity>
               {(error.type === 'manual_location' || error.type === 'permission') && (
                 <TouchableOpacity
-                  style={styles.manualButton}
+                  style={[styles.manualButton, { borderColor: theme.primary }]}
                   onPress={() => navigation.navigate('Settings')}
                 >
-                  <Text style={[styles.manualButtonText, { fontSize: 16 * scale }]}>設定で手動選択</Text>
+                  <Text style={[styles.manualButtonText, { fontSize: 16 * scale, color: theme.primary }]}>設定で手動選択</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -385,14 +438,25 @@ export const HomeScreen: React.FC = () => {
             <Text style={[styles.cardDate, { fontSize: 16 * scale }]}>
               {(() => {
                 const now = new Date();
-                const month = now.getMonth() + 1;
-                const date = now.getDate();
-                const dayOfWeek = now.getDay() as DayOfWeek;
-                return `${month}月${date}日（${DAY_NAMES[dayOfWeek]}）`;
+                const targetDate = showingTomorrow
+                  ? new Date(now.getTime() + 24 * 60 * 60 * 1000)
+                  : now;
+                const month = targetDate.getMonth() + 1;
+                const date = targetDate.getDate();
+                const dayOfWeek = targetDate.getDay() as DayOfWeek;
+                const prefix = showingTomorrow ? '明日 ' : '';
+                return `${prefix}${month}月${date}日（${DAY_NAMES[dayOfWeek]}）`;
               })()}
             </Text>
             <Text style={[styles.mainIcon, { fontSize: 80 * scale }]}>{getIcon()}</Text>
             <Text style={[styles.mainMessage, { fontSize: 24 * scale }]}>{combinedResult.overallMessage}</Text>
+
+            {/* 気温表示 */}
+            {formatTemperature() && (
+              <Text style={[styles.temperatureText, { fontSize: 16 * scale }]}>
+                {formatTemperature()}
+              </Text>
+            )}
 
             {!expanded && (
               <Text style={[styles.tapHint, { fontSize: 14 * scale }]}>タップで詳細を見る</Text>
@@ -448,60 +512,60 @@ export const HomeScreen: React.FC = () => {
 
         {/* 地点サマリー */}
         {combinedResult && (
-          <View style={[styles.locationSummary, { padding: 15 * scale }]}>
+          <View style={[styles.locationSummary, { padding: 15 * scale, backgroundColor: theme.card }]}>
             <TouchableOpacity
               style={styles.locationSummaryItem}
               onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.locationSummaryLabel, { fontSize: 12 * scale }]}>🏠 出発地</Text>
-              <Text style={[styles.locationSummaryValue, { fontSize: 14 * scale }]}>
+              <Text style={[styles.locationSummaryLabel, { fontSize: 12 * scale, color: theme.textSecondary }]}>🏠 出発地</Text>
+              <Text style={[styles.locationSummaryValue, { fontSize: 14 * scale, color: theme.text }]}>
                 {combinedResult.origin?.location.name || 'GPS（現在地）'}
               </Text>
               {combinedResult.origin && (
-                <Text style={[styles.locationSummaryPop, { fontSize: 18 * scale }]}>
+                <Text style={[styles.locationSummaryPop, { fontSize: 18 * scale, color: theme.primary }]}>
                   {combinedResult.origin.result.maxPop}%
                 </Text>
               )}
-              <Text style={[styles.locationSummaryHint, { fontSize: 10 * scale }]}>タップで変更</Text>
+              <Text style={[styles.locationSummaryHint, { fontSize: 10 * scale, color: theme.textMuted }]}>タップで変更</Text>
             </TouchableOpacity>
-            <View style={styles.locationSummaryDivider} />
+            <View style={[styles.locationSummaryDivider, { backgroundColor: theme.border }]} />
             <TouchableOpacity
               style={styles.locationSummaryItem}
               onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.locationSummaryLabel, { fontSize: 12 * scale }]}>🏢 目的地</Text>
-              <Text style={[styles.locationSummaryValue, { fontSize: 14 * scale }]}>
+              <Text style={[styles.locationSummaryLabel, { fontSize: 12 * scale, color: theme.textSecondary }]}>🏢 目的地</Text>
+              <Text style={[styles.locationSummaryValue, { fontSize: 14 * scale, color: theme.text }]}>
                 {combinedResult.destination?.location.name || '未設定'}
               </Text>
               {combinedResult.destination && (
-                <Text style={[styles.locationSummaryPop, { fontSize: 18 * scale }]}>
+                <Text style={[styles.locationSummaryPop, { fontSize: 18 * scale, color: theme.primary }]}>
                   {combinedResult.destination.result.maxPop}%
                 </Text>
               )}
-              <Text style={[styles.locationSummaryHint, { fontSize: 10 * scale }]}>タップで変更</Text>
+              <Text style={[styles.locationSummaryHint, { fontSize: 10 * scale, color: theme.textMuted }]}>タップで変更</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* 外出時間設定（外出予定がある日のみ表示） */}
         {!isNoOutingDay && (
-          <View style={[styles.outingTimeContainer, { padding: 20 * scale }]}>
-            <Text style={[styles.outingTimeLabel, { fontSize: 14 * scale }]}>外出予定時間</Text>
+          <View style={[styles.outingTimeContainer, { padding: 20 * scale, backgroundColor: theme.card }]}>
+            <Text style={[styles.outingTimeLabel, { fontSize: 14 * scale, color: theme.textSecondary }]}>外出予定時間</Text>
             <View style={styles.outingTimeButtons}>
               <TouchableOpacity
-                style={[styles.timeButton, { paddingHorizontal: 25 * scale, paddingVertical: 12 * scale }]}
+                style={[styles.timeButton, { paddingHorizontal: 25 * scale, paddingVertical: 12 * scale, backgroundColor: theme.inputBackground }]}
                 onPress={() => setShowStartPicker(true)}
               >
-                <Text style={[styles.timeButtonText, { fontSize: 20 * scale }]}>{outingTime.start}</Text>
+                <Text style={[styles.timeButtonText, { fontSize: 20 * scale, color: theme.text }]}>{outingTime.start}</Text>
               </TouchableOpacity>
-              <Text style={[styles.timeSeparator, { fontSize: 20 * scale }]}>〜</Text>
+              <Text style={[styles.timeSeparator, { fontSize: 20 * scale, color: theme.textSecondary }]}>〜</Text>
               <TouchableOpacity
-                style={[styles.timeButton, { paddingHorizontal: 25 * scale, paddingVertical: 12 * scale }]}
+                style={[styles.timeButton, { paddingHorizontal: 25 * scale, paddingVertical: 12 * scale, backgroundColor: theme.inputBackground }]}
                 onPress={() => setShowEndPicker(true)}
               >
-                <Text style={[styles.timeButtonText, { fontSize: 20 * scale }]}>{outingTime.end}</Text>
+                <Text style={[styles.timeButtonText, { fontSize: 20 * scale, color: theme.text }]}>{outingTime.end}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -510,10 +574,10 @@ export const HomeScreen: React.FC = () => {
         {/* 外出予定なしの場合の設定誘導 */}
         {isNoOutingDay && (
           <TouchableOpacity
-            style={[styles.noOutingSettingsButton, { padding: 16 * scale }]}
+            style={[styles.noOutingSettingsButton, { padding: 16 * scale, backgroundColor: theme.card }]}
             onPress={() => navigation.navigate('Settings')}
           >
-            <Text style={[styles.noOutingSettingsText, { fontSize: 16 * scale }]}>
+            <Text style={[styles.noOutingSettingsText, { fontSize: 16 * scale, color: theme.primary }]}>
               曜日別の設定を変更する
             </Text>
           </TouchableOpacity>
@@ -647,6 +711,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
     textAlign: 'center',
+  },
+  temperatureText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: 12,
   },
   tapHint: {
     fontSize: 14,

@@ -13,7 +13,7 @@ export const TermsScreen: React.FC = () => {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Text style={styles.title}>利用規約</Text>
-          <Text style={styles.lastUpdated}>最終更新日: 2026年1月27日</Text>
+          <Text style={styles.lastUpdated}>最終更新日: 2026年2月3日</Text>
 
           <Text style={styles.sectionTitle}>第1条（適用）</Text>
           <Text style={styles.paragraph}>
@@ -37,7 +37,7 @@ export const TermsScreen: React.FC = () => {
             • 曜日ごとの出発地・目的地・外出時間の設定
           </Text>
           <Text style={styles.listItem}>
-            • 指定時刻でのプッシュ通知
+            • プッシュ通知（固定時刻通知・外出前通知）
           </Text>
 
           <Text style={styles.sectionTitle}>第3条（利用料金）</Text>

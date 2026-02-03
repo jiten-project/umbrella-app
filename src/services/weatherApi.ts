@@ -14,6 +14,7 @@ import {
   AppErrorType,
   isAppError,
   UmbrellaCriteria,
+  TemperatureData,
 } from '../types';
 import { loadWeatherCache, saveWeatherCache } from './storageService';
 
@@ -424,4 +425,55 @@ export const determineCombinedUmbrella = (
     origin: originResult,
     destination: destinationResult,
   };
+};
+
+// 気温データを抽出
+export const extractTemperature = (forecast: WeatherForecast): TemperatureData => {
+  // timeSeries[2]に気温データがあることが多い
+  const tempSeries = findTimeSeriesByKeys(forecast.timeSeries, ['temps', 'tempsMin', 'tempsMax']);
+
+  if (!tempSeries) {
+    return { min: null, max: null };
+  }
+
+  const tempArea = pickAreaByCode(tempSeries.areas, forecast.areaCode);
+  if (!tempArea) {
+    return { min: null, max: null };
+  }
+
+  // temps配列から最低・最高気温を取得
+  // JMA APIでは通常、temps[0]が最低気温、temps[1]が最高気温
+  // または tempsMin/tempsMax が使われる
+  let min: number | null = null;
+  let max: number | null = null;
+
+  if (tempArea.tempsMin && tempArea.tempsMin.length > 0) {
+    const parsed = parseNumber(tempArea.tempsMin[0]);
+    if (parsed !== 0 || tempArea.tempsMin[0] === '0') {
+      min = parsed;
+    }
+  }
+
+  if (tempArea.tempsMax && tempArea.tempsMax.length > 0) {
+    const parsed = parseNumber(tempArea.tempsMax[0]);
+    if (parsed !== 0 || tempArea.tempsMax[0] === '0') {
+      max = parsed;
+    }
+  }
+
+  // tempsMin/tempsMaxがない場合はtempsから取得
+  if (min === null && max === null && tempArea.temps && tempArea.temps.length >= 2) {
+    const temp0 = parseNumber(tempArea.temps[0]);
+    const temp1 = parseNumber(tempArea.temps[1]);
+
+    // 空文字チェック（APIが空の場合がある）
+    if (tempArea.temps[0] !== '') {
+      min = temp0;
+    }
+    if (tempArea.temps[1] !== '') {
+      max = temp1;
+    }
+  }
+
+  return { min, max };
 };
