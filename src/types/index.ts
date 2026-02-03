@@ -91,6 +91,9 @@ export interface Location {
 // 傘判断の条件タイプ（AND: 両方満たす, OR: どちらか満たす）
 export type UmbrellaCriteriaLogic = 'and' | 'or';
 
+// 通知モード（fixed: 固定時刻, beforeOuting: 外出30分前）
+export type NotificationMode = 'fixed' | 'beforeOuting';
+
 // 傘判断の基準設定
 export interface UmbrellaCriteria {
   popThreshold: number; // 降水確率の閾値（%）
@@ -119,6 +122,9 @@ export type WeeklySchedule = {
 export interface Settings {
   notificationEnabled: boolean;
   notificationTime: string; // "07:00" format
+  notificationMode?: NotificationMode; // 旧設定互換用（マイグレーション後は不要）
+  notificationLeadTime: number; // 外出前通知の時間（分）
+  beforeOutingNotificationEnabled: boolean; // 外出前通知の有効/無効
   defaultOutingStart: string; // "09:00" format（後方互換性）
   defaultOutingEnd: string; // "18:00" format（後方互換性）
   locations: Location[];
@@ -127,12 +133,19 @@ export interface Settings {
   destinationLocationId: string | null; // 目的地（後方互換性、null = 設定なし）
   umbrellaCriteria: UmbrellaCriteria; // 傘判断基準
   weeklySchedule?: WeeklySchedule; // 曜日ごとの設定（オプショナルで後方互換性確保）
+  showTemperature?: boolean; // 気温表示（オプショナルで後方互換性確保）
 }
 
 // 外出時間
 export interface OutingTime {
   start: string; // "09:00" format
   end: string; // "18:00" format
+}
+
+// 気温データ
+export interface TemperatureData {
+  min: number | null; // 最低気温（℃）
+  max: number | null; // 最高気温（℃）
 }
 
 // JMA APIレスポンスの型
